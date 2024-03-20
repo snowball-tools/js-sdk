@@ -1,8 +1,5 @@
 {
 	"name": "@snowballtools/types",
-	"keywords": [
-		"types"
-	],
 	"version": "0.0.0",
 	"description": "snowballtools types",
 	"main": "./dist/index.js",
@@ -24,5 +21,8 @@
 	},
 	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
 	"author": "Snowball Tools Inc.",
-	"license": "MIT"
+	"license": "MIT",
+	"keywords": [
+		"types"
+	]
 }
