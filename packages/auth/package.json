@@ -1,0 +1,30 @@
+{
+	"name": "@snowballtools/auth",
+	"version": "0.0.0",
+	"description": "snowballtools auth",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**/*",
+		"src/**/*"
+	],
+	"scripts": {
+		"build": "snowball-build-ts src/index.ts"
+	},
+	"dependencies": {
+		"@lit-protocol/pkp-ethers": "3.0.32",
+		"@lit-protocol/types": "3.0.32",
+		"@snowballtools/types": "*"
+	},
+	"devDependencies": {
+		"@internal/snowball-build-ts": "*",
+		"@internal/typescript-config": "*"
+	},
+	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
+	"author": "Snowball Tools Inc.",
+	"license": "MIT",
+	"keywords": [
+		"auth"
+	]
+}
