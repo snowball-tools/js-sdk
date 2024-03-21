@@ -1,0 +1,31 @@
+{
+	"name": "@snowballtools/auth-turnkey",
+	"version": "0.0.0",
+	"description": "snowballtools auth-turnkey",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**/*",
+		"src/**/*"
+	],
+	"scripts": {
+		"build": "snowball-build-ts src/index.ts"
+	},
+	"dependencies": {
+		"@snowballtools/auth": "*",
+		"@snowballtools/types": "*",
+		"@snowballtools/utils": "*"
+	},
+	"devDependencies": {
+		"@internal/snowball-build-ts": "*",
+		"@internal/typescript-config": "*"
+	},
+	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
+	"author": "Snowball Tools Inc.",
+	"license": "MIT",
+	"keywords": [
+		"turnkey",
+		"passkeys"
+	]
+}
