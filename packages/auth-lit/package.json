@@ -1,0 +1,37 @@
+{
+	"name": "@snowballtools/auth-lit",
+	"version": "0.0.0",
+	"description": "snowballtools auth-passkey",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**/*",
+		"src/**/*"
+	],
+	"scripts": {
+		"build": "snowball-build-ts src/index.ts"
+	},
+	"dependencies": {
+		"@lit-protocol/auth-helpers": "3.0.32",
+		"@lit-protocol/constants": "3.0.32",
+		"@lit-protocol/lit-auth-client": "3.0.32",
+		"@lit-protocol/lit-node-client": "3.0.32",
+		"@lit-protocol/pkp-ethers": "3.0.32",
+		"@lit-protocol/types": "3.0.32",
+		"@snowballtools/auth": "*",
+		"@snowballtools/types": "*",
+		"@snowballtools/utils": "*"
+	},
+	"devDependencies": {
+		"@internal/snowball-build-ts": "*",
+		"@internal/typescript-config": "*"
+	},
+	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
+	"author": "Snowball Tools Inc.",
+	"license": "MIT",
+	"keywords": [
+		"litprotocol",
+		"passkeys"
+	]
+}

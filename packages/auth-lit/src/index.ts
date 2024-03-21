@@ -1,0 +1,1 @@
+export { LitPasskey } from './LitPasskey'
