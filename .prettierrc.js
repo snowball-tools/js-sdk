@@ -1,7 +1,6 @@
 module.exports = {
-  // https://github.com/trivago/prettier-plugin-sort-imports/issues/131#issuecomment-1163488213
   plugins: [
-    require.resolve('@trivago/prettier-plugin-sort-imports'),
+    '@trivago/prettier-plugin-sort-imports'
   ],
   semi: false,
   trailingComma: 'all',

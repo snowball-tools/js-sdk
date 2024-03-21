@@ -1,2 +1,2 @@
-export type { SmartWallet } from './SmartWallet';
-export { AlchemySmartWallet } from './AlchemySmartWallet';
+export type { SmartWallet } from './SmartWallet'
+export { AlchemySmartWallet } from './AlchemySmartWallet'

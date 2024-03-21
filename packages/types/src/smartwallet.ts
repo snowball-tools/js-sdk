@@ -1,7 +1,7 @@
-import { SmartWalletProvider } from '@snowballtools/utils';
+import { SmartWalletProvider } from '@snowballtools/utils'
 
 export interface SmartWalletProviderInfo {
-	name: SmartWalletProvider;
-	apiKeys: { [key: string]: string };
-	configs?: { [key: string]: string };
+  name: SmartWalletProvider
+  apiKeys: { [key: string]: string }
+  configs?: { [key: string]: string }
 }
