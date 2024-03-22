@@ -1,7 +1,7 @@
-import { AuthProvider } from '@snowballtools/utils'
+export type AuthProviderName = 'lit' | 'turnkey'
 
 export interface AuthProviderInfo {
-  name: AuthProvider
+  name: AuthProviderName
   apiKeys: { [key: string]: string }
   configs?: { [key: string]: string }
 }

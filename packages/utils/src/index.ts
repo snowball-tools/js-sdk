@@ -7,7 +7,7 @@ export {
   alchemyAPIKey,
   alchemyGasPolicyId,
 } from './chains'
-export { AuthProvider, AuthProviders } from './auth'
+export { AuthProviders } from './auth'
 export {
   SmartWalletProvider,
   AlchemySmartWalletProviderKey,

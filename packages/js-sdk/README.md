@@ -34,7 +34,6 @@ import { SnowballSDK } from '@snowballtools/snowball-sdk';
 import {
   Snowball,
   CHAINS,
-  AuthProvider,
   SmartWalletProvider,
   AlchemySmartWalletProviderKey,
 } from "@snowballtools/snowball-ts-sdk";
@@ -43,7 +42,7 @@ export const snowball = new Snowball(
   "snowball-api-key",
   CHAINS.goerli, // chain
   {
-    name: AuthProvider.lit,
+    name: 'lit',
     apiKeys: {
       ["relayKey": "LIT_RELAY_KEY"],
     },

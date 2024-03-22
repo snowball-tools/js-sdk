@@ -1,15 +1,13 @@
-export enum AuthProvider {
-  lit = 'lit',
-  turnkey = 'turnkey',
-}
+import { AuthProviderInfo, AuthProviderName } from '@snowballtools/types'
 
-export const AuthProviders = {
+// TODO: Not sure if this is actually used
+export const AuthProviders: Record<AuthProviderName, AuthProviderInfo> = {
   lit: {
-    name: AuthProvider.lit,
+    name: 'lit',
     apiKeys: {},
   },
   turnkey: {
-    name: AuthProvider.turnkey,
+    name: 'turnkey',
     apiKeys: {},
   },
 }

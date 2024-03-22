@@ -15,6 +15,7 @@
 	"dependencies": {
 		"@alchemy/aa-accounts": "^1.2.0",
 		"@alchemy/aa-core": "^1.2.0",
+		"@snowballtools/types": "*",
 		"alchemy-sdk": "^2.10.0",
 		"viem": "^1.19.8"
 	},

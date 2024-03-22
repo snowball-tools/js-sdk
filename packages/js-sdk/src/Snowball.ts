@@ -3,7 +3,7 @@ import { LitPasskey } from '@snowballtools/auth-lit'
 import { TurkeyPasskey } from '@snowballtools/auth-turnkey'
 import { AlchemySmartWallet, type SmartWallet } from '@snowballtools/smartwallet'
 import type { AuthProviderInfo, Chain, SmartWalletProviderInfo } from '@snowballtools/types'
-import { AuthProvider, SmartWalletProvider, alchemyAPIKey, viemChain } from '@snowballtools/utils'
+import { SmartWalletProvider, alchemyAPIKey, viemChain } from '@snowballtools/utils'
 
 import { AlchemyProvider } from '@alchemy/aa-alchemy'
 import {
@@ -47,10 +47,10 @@ export class Snowball {
 
   private initAuth(): Auth {
     switch (this.authProviderInfo.name) {
-      case AuthProvider.turnkey:
+      case 'turnkey':
         return new TurkeyPasskey(this.chain, this.authProviderInfo)
       default:
-      case AuthProvider.lit:
+      case 'lit':
         return new LitPasskey(this.chain, this.authProviderInfo)
     }
   }
