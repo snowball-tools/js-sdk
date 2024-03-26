@@ -1,5 +1,0 @@
-{
-	"extends": "@internal/typescript-config/external-library.json",
-	"include": ["src/**/*"],
-	"references": []
-}

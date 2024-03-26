@@ -1,1 +1,0 @@
-export { TurkeyPasskey } from './TurkeyPasskey'
