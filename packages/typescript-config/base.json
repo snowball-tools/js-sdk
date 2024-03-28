@@ -2,11 +2,6 @@
   "$schema": "https://json.schemastore.org/tsconfig",
   "display": "Default",
   "compilerOptions": {
-    "paths": {
-      "@snowballtools/*": [
-        "../*/src/index.ts"
-      ]
-    },
     "declaration": true,
     "declarationMap": true,
     "esModuleInterop": true,

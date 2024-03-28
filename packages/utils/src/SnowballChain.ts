@@ -1,26 +1,14 @@
-import { chains } from '@alchemy/aa-core'
+import { Address, SnowballError } from '@snowballtools/types'
+
 import { Network } from 'alchemy-sdk'
-import type { Address } from 'viem'
-import { type Chain as ViemChain, goerli, mainnet, sepolia } from 'viem/chains'
+import {
+  type Chain as ViemChain,
+  goerli as viem_goerli,
+  mainnet as viem_mainnet,
+  sepolia as viem_sepolia,
+} from 'viem/chains'
 
-import { AlchemySmartWalletProviderKey } from './smartwallet'
-
-interface Chain {
-  chainId: number
-  name: string
-  symbol: string
-  decimals: number
-  type: string
-  enabled: boolean
-  rpcUrls: string[]
-  blockExplorerUrls: string[]
-  vmType: string
-  testNetwork: boolean
-  factoryAddress: Address
-  entryPointAddress: Address
-}
-
-export const CHAINS = {
+const CHAINS = {
   ethereum: {
     chainId: 1,
     name: 'Ethereum',
@@ -193,65 +181,99 @@ export const CHAINS = {
   },
 }
 
-export function viemChain(chain: Chain): ViemChain {
-  switch (chain) {
-    case CHAINS.ethereum:
-      return mainnet
-    case CHAINS.goerli:
-      return goerli
-    case CHAINS.sepolia:
-      return sepolia
-    default:
-      throw new Error('Unsupported chain')
+export class SnowballChain {
+  static ethereum = new SnowballChain(CHAINS.ethereum)
+  static goerli = new SnowballChain(CHAINS.goerli)
+  static sepolia = new SnowballChain(CHAINS.sepolia)
+  static mantle = new SnowballChain(CHAINS.mantle)
+  static mantle_testnet = new SnowballChain(CHAINS.mantle_testnet)
+  static polygon = new SnowballChain(CHAINS.polygon)
+  static mumbai = new SnowballChain(CHAINS.mumbai)
+  static arbitrum = new SnowballChain(CHAINS.arbitrum)
+  static optimism = new SnowballChain(CHAINS.optimism)
+  static celo = new SnowballChain(CHAINS.celo)
+  static base = new SnowballChain(CHAINS.base)
+  static base_goerli = new SnowballChain(CHAINS.base_goerli)
+
+  static toViemMap = new Map<number, ViemChain>([
+    [SnowballChain.ethereum.chainId, viem_mainnet],
+    [SnowballChain.goerli.chainId, viem_goerli],
+    [SnowballChain.sepolia.chainId, viem_sepolia],
+  ])
+
+  static toAlchemyNetworkMap = new Map<number, Network>([
+    [SnowballChain.ethereum.chainId, Network.ETH_MAINNET],
+    [SnowballChain.goerli.chainId, Network.ETH_GOERLI],
+    [SnowballChain.sepolia.chainId, Network.ETH_SEPOLIA],
+  ])
+
+  // Filled in below
+  static byChainId = new Map<number, SnowballChain>()
+
+  chainId: number
+  name: string
+  symbol: string
+  decimals: number
+  type: string
+  enabled: boolean
+  rpcUrls: string[]
+  blockExplorerUrls: string[]
+  vmType: string
+  testNetwork: boolean
+  factoryAddress: Address
+  entryPointAddress: Address
+
+  constructor(data: {
+    chainId: number
+    name: string
+    symbol: string
+    decimals: number
+    type: string
+    enabled: boolean
+    rpcUrls: string[]
+    blockExplorerUrls: string[]
+    vmType: string
+    testNetwork: boolean
+    factoryAddress: Address
+    entryPointAddress: Address
+  }) {
+    this.chainId = data.chainId
+    this.name = data.name
+    this.symbol = data.symbol
+    this.decimals = data.decimals
+    this.type = data.type
+    this.enabled = data.enabled
+    this.rpcUrls = data.rpcUrls
+    this.blockExplorerUrls = data.blockExplorerUrls
+    this.vmType = data.vmType
+    this.testNetwork = data.testNetwork
+    this.factoryAddress = data.factoryAddress
+    this.entryPointAddress = data.entryPointAddress
+  }
+
+  toViemChain(): ViemChain {
+    const chain = SnowballChain.toViemMap.get(this.chainId)
+    if (!chain) {
+      throw new SnowballError(
+        `Unsupported chain: ${this.name} (${this.chainId})`,
+        'UNSUPPORTED_VIEM_CHAIN',
+      )
+    }
+    return chain
+  }
+
+  toAlchemyNetwork(): Network {
+    const network = SnowballChain.toAlchemyNetworkMap.get(this.chainId)
+    if (!network) {
+      throw new SnowballError(
+        `Unsupported chain: ${this.name} (${this.chainId})`,
+        'UNSUPPORTED_ALCHEMY_NETWORK',
+      )
+    }
+    return network
   }
 }
 
-export function getAlchemyNetwork(chain: Chain): Network {
-  switch (chain) {
-    case CHAINS.ethereum:
-      return Network.ETH_MAINNET
-    case CHAINS.goerli:
-      return Network.ETH_GOERLI
-    case CHAINS.sepolia:
-      return Network.ETH_SEPOLIA
-    default:
-      throw new Error('Unsupported chain')
-  }
-}
-
-export function getAlchemyChain(chain: Chain): chains.Chain {
-  switch (chain) {
-    case CHAINS.ethereum:
-      return chains.mainnet
-    case CHAINS.goerli:
-      return chains.goerli
-    case CHAINS.sepolia:
-      return chains.sepolia
-    default:
-      throw new Error('Unsupported chain')
-  }
-}
-
-// TODO: Rework api
-export function alchemyAPIKey(chain: Chain, apiKeys: { [key: string]: string }): string {
-  switch (chain.chainId) {
-    case CHAINS.goerli.chainId:
-      return apiKeys[AlchemySmartWalletProviderKey.ethereumGoerli]!
-    case CHAINS.sepolia.chainId:
-      return apiKeys[AlchemySmartWalletProviderKey.ethereumSepolia]!
-    default:
-      throw new Error('Unsupported chain')
-  }
-}
-
-// TODO: Rework api
-export function alchemyGasPolicyId(chain: Chain, apiKeys: { [key: string]: string }): string {
-  switch (chain) {
-    case CHAINS.goerli:
-      return apiKeys[AlchemySmartWalletProviderKey.ethereumGoerli_gasPolicyId]!
-    case CHAINS.sepolia:
-      return apiKeys[AlchemySmartWalletProviderKey.ethereumSepolia_gasPolicyId]!
-    default:
-      throw new Error('Unsupported chain')
-  }
+for (const chain of Object.values(CHAINS)) {
+  SnowballChain.byChainId.set(chain.chainId, new SnowballChain(chain))
 }

@@ -1,4 +1,4 @@
-import type { Address } from 'viem'
+import { Address } from './prims'
 
 export interface Chain {
   chainId: number

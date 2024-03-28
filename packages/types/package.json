@@ -10,10 +10,8 @@
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts"
-	},
-	"dependencies": {
-		"@snowballtools/utils": "*"
+		"build": "snowball-build-ts src/index.ts",
+		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",

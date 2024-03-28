@@ -1,2 +1,4 @@
-export { Auth } from './Auth'
-export { Passkey } from './Passkey'
+export { SnowballAuth } from './Auth'
+export { SnowballPasskeyAuth } from './PasskeyAuth'
+
+export type { SnowballSmartWallet } from './SmartWallet'

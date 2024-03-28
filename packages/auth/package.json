@@ -10,12 +10,15 @@
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts"
+		"build": "snowball-build-ts src/index.ts",
+		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
 		"@lit-protocol/pkp-ethers": "3.0.32",
 		"@lit-protocol/types": "3.0.32",
-		"@snowballtools/types": "*"
+		"@snowballtools/types": "*",
+		"@snowballtools/utils": "*",
+		"robot3": "^0.4.1"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",

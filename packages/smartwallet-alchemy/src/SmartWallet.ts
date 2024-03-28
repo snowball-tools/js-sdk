@@ -1,8 +1,7 @@
-import type { Chain } from '@snowballtools/types'
+import type { Chain, Hash, Hex } from '@snowballtools/types'
 
 import { type Address, UserOperationReceipt, UserOperationResponse } from '@alchemy/aa-core'
 import type { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
-import { Hash, Hex } from 'viem'
 
 /**
  * Interface for the SnowBall SDK Smart Wallet.

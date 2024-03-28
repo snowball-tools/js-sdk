@@ -10,15 +10,16 @@
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts"
+		"build": "snowball-build-ts src/index.ts",
+		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
-		"@lit-protocol/auth-helpers": "3.0.32",
-		"@lit-protocol/constants": "3.0.32",
-		"@lit-protocol/lit-auth-client": "3.0.32",
-		"@lit-protocol/lit-node-client": "3.0.32",
-		"@lit-protocol/pkp-ethers": "3.0.32",
-		"@lit-protocol/types": "3.0.32",
+		"@lit-protocol/auth-helpers": "2.2.62",
+		"@lit-protocol/constants": "2.2.62",
+		"@lit-protocol/lit-auth-client": "2.2.62",
+		"@lit-protocol/lit-node-client": "2.2.62",
+		"@lit-protocol/pkp-ethers": "2.2.62",
+		"@lit-protocol/types": "2.2.62",
 		"@snowballtools/auth": "*",
 		"@snowballtools/types": "*",
 		"@snowballtools/utils": "*"

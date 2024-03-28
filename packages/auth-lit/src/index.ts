@@ -1,1 +1,1 @@
-export { LitPasskey } from './LitPasskey'
+export { LitPasskeyAuth } from './LitPasskey'

@@ -1,217 +1,147 @@
-import { Auth } from '@snowballtools/auth'
-import { LitPasskey } from '@snowballtools/auth-lit'
-import { TurkeyPasskey } from '@snowballtools/auth-turnkey'
-import { AlchemySmartWallet, type SmartWallet } from '@snowballtools/smartwallet'
-import type { AuthProviderInfo, Chain, SmartWalletProviderInfo } from '@snowballtools/types'
-import { SmartWalletProvider, alchemyAPIKey, viemChain } from '@snowballtools/utils'
+import { SnowballAuth, SnowballSmartWallet } from '@snowballtools/auth'
+import { Address } from '@snowballtools/types'
+import { SnowballChain } from '@snowballtools/utils'
 
-import { AlchemyProvider } from '@alchemy/aa-alchemy'
-import {
-  type Address,
-  type Hex,
-  type SignTypedDataParams,
-  type SmartAccountSigner,
-  type UserOperationReceipt,
-  type UserOperationResponse,
-} from '@alchemy/aa-core'
-import { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
-import type { TypedDataField } from 'ethers'
-import type { Hash } from 'viem'
+type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
 
-export class Snowball {
-  private apiKey: string
+export type SnowballOptions<
+  Auth extends SnowballAuth<any, any>,
+  SmartWallet extends SnowballSmartWallet,
+> = {
+  // apiKey: string // TODO
+  chain: SnowballChain
+  makeAuth: (chain: SnowballChain) => Auth
+  makeSmartWallet: (
+    chain: SnowballChain,
+    wallet: Ret<Auth['getEthersWallet']>,
+  ) => SmartWallet | Promise<SmartWallet>
+}
 
-  private chain: Chain
+export class Snowball<
+  Auth extends SnowballAuth<any, any>,
+  SmartWallet extends SnowballSmartWallet,
+> {
+  private chainEntries = new Map<
+    number,
+    { chain: SnowballChain; auth: Auth; smartWallet?: SmartWallet }
+  >()
+  private currentChainId: number
 
-  private authProviderInfo: AuthProviderInfo
+  static Chain = SnowballChain
 
-  private smartWalletProviderInfo: SmartWalletProviderInfo
-
-  private auth: Auth
-
-  private _smartWallet: SmartWallet | undefined
-
-  constructor(
-    apiKey: string,
-    chain: Chain,
-    authProviderInfo: AuthProviderInfo,
-    smartWalletProviderInfo: SmartWalletProviderInfo,
-  ) {
-    this.apiKey = apiKey
-    this.chain = chain
-    this.authProviderInfo = authProviderInfo
-    this.smartWalletProviderInfo = smartWalletProviderInfo
-
-    this.auth = this.initAuth()
-  }
-
-  private initAuth(): Auth {
-    switch (this.authProviderInfo.name) {
-      case 'turnkey':
-        return new TurkeyPasskey(this.chain, this.authProviderInfo)
-      default:
-      case 'lit':
-        return new LitPasskey(this.chain, this.authProviderInfo)
-    }
-  }
-
-  private async initSmartWallet(): Promise<SmartWallet> {
-    if (this.smartWalletProviderInfo.name === SmartWalletProvider.alchemy) {
-      const provider = new AlchemyProvider({
-        chain: viemChain(this.chain),
-        apiKey: alchemyAPIKey(this.chain, this.smartWalletProviderInfo.apiKeys),
-        entryPointAddress: this.chain.entryPointAddress,
-      })
-
-      if (this.auth instanceof LitPasskey) {
-        const pkpWallet = await (this.auth as LitPasskey).getEthersWallet()
-
-        const signer: SmartAccountSigner = {
-          signerType: 'PKP',
-          inner: pkpWallet,
-          signMessage: async (msg: Hex | Uint8Array | string) =>
-            (await pkpWallet.signMessage(msg)) as Address,
-          getAddress: async () => (await pkpWallet.getAddress()) as Address,
-          signTypedData: async (params: SignTypedDataParams) => {
-            const types: Record<string, TypedDataField[]> = {
-              [params.primaryType]: params.types['x']!.map(
-                (value) =>
-                  ({
-                    name: value.name,
-                    type: value.type,
-                  }) as TypedDataField,
-              ),
-            }
-
-            return (await pkpWallet._signTypedData(
-              params.domain ? params.domain : {},
-              types,
-              params.message,
-            )) as Address
+  // Builder for type inference
+  static withAuth<A extends SnowballAuth<any, any>>(makeAuth: (chain: SnowballChain) => A) {
+    return {
+      withSmartWallet<SW extends SnowballSmartWallet>(
+        makeSmartWallet: (
+          chain: SnowballChain,
+          wallet: Ret<A['getEthersWallet']>,
+        ) => Promise<SW> | SW,
+      ) {
+        return {
+          create(opts: { initialChain: SnowballChain }) {
+            return new Snowball<A, SW>({
+              chain: opts.initialChain,
+              makeAuth,
+              makeSmartWallet,
+            })
           },
         }
-
-        return new AlchemySmartWallet(this.chain, this.smartWalletProviderInfo, provider, signer)
-      }
-      throw new Error('Unsupported auth provider')
-    } else {
-      throw new Error('Unsupported smart wallet provider')
+      },
     }
   }
 
-  async register(username: string): Promise<void> {
-    try {
-      return await this.auth.register(username)
-    } catch (error) {
-      return Promise.reject(`register failed ${error}`)
-    }
+  constructor(private opts: SnowballOptions<Auth, SmartWallet>) {
+    const chain = this.opts.chain
+
+    this.chainEntries.set(chain.chainId, {
+      auth: this.opts.makeAuth(chain),
+      chain,
+    })
+    this.currentChainId = chain.chainId
   }
 
-  async authenticate(): Promise<void> {
-    try {
-      await this.auth.authenticate()
-      this._smartWallet = await this.initSmartWallet()
-
-      return void (await Promise.resolve())
-    } catch (error) {
-      return Promise.reject(`authenticate failed ${error}`)
-    }
+  get chain() {
+    return this.chainEntries.get(this.currentChainId)!.chain
   }
 
-  async getEthersWallet(): Promise<PKPEthersWallet> {
-    try {
-      return await this.auth.getEthersWallet()
-    } catch (error) {
-      return Promise.reject(`getEthersWallet failed ${error}`)
-    }
+  get auth() {
+    return this.chainEntries.get(this.currentChainId)!.auth
   }
 
-  async switchChain(chain: Chain) {
+  get smartWallet() {
+    return this.chainEntries.get(this.currentChainId)!.smartWallet
+  }
+
+  // private async initSmartWallet(): Promise<SmartWallet> {
+  //   if (this.smartWalletProviderInfo.name === SmartWalletProvider.alchemy) {
+  //     const provider = new AlchemyProvider({
+  //       chain: viemChain(this.chain),
+  //       apiKey: alchemyAPIKey(this.chain, this.smartWalletProviderInfo.apiKeys),
+  //       entryPointAddress: this.chain.entryPointAddress,
+  //     })
+  //     if (this.SnowballAuthClass instanceof LitPasskey) {
+  //       const pkpWallet = await (this.SnowballAuthClass as LitPasskey).getEthersWallet()
+  //       const signer: SmartAccountSigner = {
+  //         signerType: 'PKP',
+  //         inner: pkpWallet,
+  //         signMessage: async (msg: Hex | Uint8Array | string) =>
+  //           (await pkpWallet.signMessage(msg)) as Address,
+  //         getAddress: async () => (await pkpWallet.getAddress()) as Address,
+  //         signTypedData: async (params: SignTypedDataParams) => {
+  //           const types: Record<string, TypedDataField[]> = {
+  //             [params.primaryType]: params.types['x']!.map(
+  //               (value) =>
+  //                 ({
+  //                   name: value.name,
+  //                   type: value.type,
+  //                 }) as TypedDataField,
+  //             ),
+  //           }
+  //           return (await pkpWallet._signTypedData(
+  //             params.domain ? params.domain : {},
+  //             types,
+  //             params.message,
+  //           )) as Address
+  //         },
+  //       }
+  //       return new AlchemySmartWallet(this.chain, this.smartWalletProviderInfo, provider, signer)
+  //     }
+  //     throw new Error('Unsupported auth provider')
+  //   } else {
+  //     throw new Error('Unsupported smart wallet provider')
+  //   }
+  // }
+
+  async switchChain(chain: SnowballChain) {
+    if (this.chainEntries.has(chain.chainId)) {
+      this.currentChainId = chain.chainId
+      return
+    }
     try {
-      this.chain = chain
-      const smartWallet = await this.smartWallet()
-      smartWallet.switchChain(chain)
+      this.chainEntries.set(chain.chainId, {
+        auth: this.opts.makeAuth(chain),
+        chain,
+      })
+      this.currentChainId = chain.chainId
+      await this.getSmartWallet()
     } catch (error) {
       return Promise.reject(`changeChain failed ${error}`)
     }
   }
 
-  async getAddress(): Promise<Address> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.getAddress()
-    } catch (error) {
-      return Promise.reject(`getAddress failed ${error}`)
+  async getSmartWallet(): Promise<SmartWallet> {
+    const entry = this.chainEntries.get(this.currentChainId)!
+    if (!entry.smartWallet) {
+      entry.smartWallet = await this.opts.makeSmartWallet(
+        entry.chain,
+        await this.auth.getEthersWallet(),
+      )
     }
+    return entry.smartWallet
   }
 
-  async sendUserOperation(
-    target: Address,
-    data: Hex,
-    value?: bigint,
-  ): Promise<{
-    hash: string
-  }> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.sendUserOperation(target, data, value)
-    } catch (error) {
-      return Promise.reject(`sendUserOperation failed ${error}`)
-    }
-  }
-
-  async sendSponsoredUserOperation(
-    target: Address,
-    data: Hex,
-    value?: bigint,
-  ): Promise<{
-    hash: string
-  }> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.sendSponsoredUserOperation(target, data, value)
-    } catch (error) {
-      return Promise.reject(`sendSponsoredUserOperation failed ${error}`)
-    }
-  }
-
-  async waitForUserOperationTransaction(hash: Hash): Promise<Hash> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.waitForUserOperationTransaction(hash)
-    } catch (error) {
-      return Promise.reject(`waitForUserOperationTransaction failed ${error}`)
-    }
-  }
-
-  async getUserOperationByHash(hash: Hash): Promise<UserOperationResponse | null> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.getUserOperationByHash(hash)
-    } catch (error) {
-      return Promise.reject(`getUserOperationByHash failed ${error}`)
-    }
-  }
-
-  async getUserOperationReceipt(hash: Hash): Promise<UserOperationReceipt | null> {
-    try {
-      const smartWallet = await this.smartWallet()
-      return await smartWallet.getUserOperationReceipt(hash)
-    } catch (error) {
-      return Promise.reject(`getUserOperationReceipt failed ${error}`)
-    }
-  }
-
-  // temp solution. going through a massive rewrite. expect initSmartWallet will grow exponentially -- much cleaner
-  async smartWallet(): Promise<SmartWallet> {
-    if (!this._smartWallet) {
-      try {
-        this._smartWallet = await this.initSmartWallet()
-      } catch (error) {
-        return Promise.reject(`smartWallet failed ${error}`)
-      }
-    }
-
-    return this._smartWallet
+  async getSmartWalletAddress(): Promise<Address> {
+    return (await this.getSmartWallet()).getAddress()
   }
 }

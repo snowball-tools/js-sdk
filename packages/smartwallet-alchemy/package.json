@@ -1,5 +1,5 @@
 {
-	"name": "@snowballtools/utils",
+	"name": "@snowballtools/smartwallet-alchemy",
 	"version": "0.0.0",
 	"description": "aa",
 	"main": "./dist/index.js",
@@ -14,9 +14,13 @@
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
+		"@alchemy/aa-accounts": "^1.2.0",
+		"@alchemy/aa-alchemy": "^1.2.0",
 		"@alchemy/aa-core": "^1.2.0",
+		"@lit-protocol/pkp-ethers": "3.0.32",
+		"@lit-protocol/types": "3.0.32",
 		"@snowballtools/types": "*",
-		"alchemy-sdk": "^2.10.0",
+		"@snowballtools/utils": "*",
 		"viem": "^1.19.8"
 	},
 	"devDependencies": {
@@ -27,6 +31,7 @@
 	"author": "Snowball Tools Inc.",
 	"license": "MIT",
 	"keywords": [
-		"utils"
+		"smartwallet",
+		"aa"
 	]
 }
