@@ -1,61 +1,70 @@
 import { Address, Hash, Hex, SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
+import { AlchemySmartAccountClient, createLightAccountAlchemyClient } from '@alchemy/aa-alchemy'
 import {
-  LightSmartContractAccount,
-  getDefaultLightAccountFactoryAddress,
-} from '@alchemy/aa-accounts'
-import { AlchemyProvider } from '@alchemy/aa-alchemy'
-import {
+  SendUserOperationParameters,
   SmartAccountSigner,
-  UserOperationCallData,
+  SmartContractAccount,
   UserOperationReceipt,
   UserOperationResponse,
+  WaitForUserOperationTxParameters,
 } from '@alchemy/aa-core'
 import { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
 
 type ApiKeys = {
-  /** Not required at this time; presumably `signer` is already using this */
-  apiKey?: string
+  /** Make sure this matches with the chain you're trying to use! */
+  apiKey: string
   /** Required for sendSponsoredUserOperation */
   gasPolicyId?: string
 }
 
-export class AlchemySmartWallet extends LightSmartContractAccount {
+export class AlchemySmartWallet {
   ethersWallet: PKPEthersWallet | undefined
+
+  static async make(chain: SnowballChain, signer: SmartAccountSigner, apiKeys: ApiKeys) {
+    console.log(200, apiKeys.gasPolicyId)
+    const client = await createLightAccountAlchemyClient({
+      chain: chain.toViemChain(),
+      rpcUrl: chain.alchemyRpcUrls(apiKeys.apiKey)[0],
+      signer,
+      factoryAddress: chain.factoryAddress,
+      gasManagerConfig: apiKeys.gasPolicyId ? { policyId: apiKeys.gasPolicyId } : undefined,
+    })
+    console.log(201)
+    return new AlchemySmartWallet(chain, client, apiKeys)
+  }
 
   constructor(
     readonly chain: SnowballChain,
-    private provider: AlchemyProvider,
-    signer: SmartAccountSigner,
+    readonly client: AlchemySmartAccountClient,
     private apiKeys: ApiKeys,
-  ) {
-    super({
-      rpcClient: provider.rpcClient,
-      owner: signer,
-      chain: chain.toViemChain(),
-      factoryAddress: getDefaultLightAccountFactoryAddress(chain.toViemChain()),
-    })
-    this.chain = chain
-    this.provider = provider
-  }
+  ) {}
 
-  override async getAddress(): Promise<Address> {
+  async getAddress(): Promise<Address> {
     try {
-      return await this.provider.getAddress()
+      // TODO: Types are requiring account, but I don't think we need it
+      // const addr = await this.client.getAddress({ account: this.client.account! })
+      //@ts-ignore
+      const addr = await this.client.getAddress()
+      console.log('Alchemy getAddress', addr)
+      return addr
     } catch (error) {
       throw new Error(`Failed to get address: ${error instanceof Error ? error.message : error}`)
     }
   }
 
-  async sendUserOperation(target: Address, data: Hex, value?: bigint): Promise<{ hash: string }> {
+  /** Convenience helper. For full configuration, use .client.sendUserOperation() */
+  async sendUserOperation(
+    uo: SendUserOperationParameters<SmartContractAccount | undefined>['uo'],
+  ): Promise<{ hash: string }> {
     try {
-      const userOperationCallData: UserOperationCallData = {
-        target: target,
-        data: data,
-        value: value,
-      }
-      const response = await this.provider.sendUserOperation(userOperationCallData)
+      console.log('AHHHH')
+      //@ts-ignore
+      const response = await this.client.sendUserOperation({
+        account: this.client.account!,
+        uo,
+      })
       return { hash: response.hash }
     } catch (error) {
       throw new Error(
@@ -64,35 +73,9 @@ export class AlchemySmartWallet extends LightSmartContractAccount {
     }
   }
 
-  async sendSponsoredUserOperation(
-    target: Address,
-    data: Hex,
-    value?: bigint,
-  ): Promise<{ hash: string }> {
-    const { gasPolicyId } = this.apiKeys
-    if (!gasPolicyId) {
-      throw new SnowballError(
-        'No gas policy ID provided for sponsored user operation',
-        'SMARTWALLET_ALCHEMY_NO_GAS_POLICY_ID',
-      )
-    }
+  async waitForUserOperationTransaction(params: WaitForUserOperationTxParameters): Promise<Hash> {
     try {
-      this.provider = this.provider.withAlchemyGasManager({
-        policyId: gasPolicyId,
-      })
-
-      const response = await this.sendUserOperation(target, data, value)
-      return { hash: response.hash }
-    } catch (error) {
-      throw new Error(
-        `Failed to send sponsor user operation: ${error instanceof Error ? error.message : error}`,
-      )
-    }
-  }
-
-  async waitForUserOperationTransaction(hash: Hash): Promise<Hash> {
-    try {
-      return await this.provider.waitForUserOperationTransaction(hash)
+      return await this.client.waitForUserOperationTransaction(params)
     } catch (error) {
       throw new Error(
         `Failed to wait for user operation transaction: ${
@@ -104,7 +87,7 @@ export class AlchemySmartWallet extends LightSmartContractAccount {
 
   async getUserOperationByHash(hash: Hash): Promise<UserOperationResponse | null> {
     try {
-      return await this.provider.getUserOperationByHash(hash)
+      return await this.client.getUserOperationByHash(hash)
     } catch (error) {
       throw new Error(
         `Failed to get user operation by hash: ${error instanceof Error ? error.message : error}`,
@@ -114,7 +97,7 @@ export class AlchemySmartWallet extends LightSmartContractAccount {
 
   async getUserOperationReceipt(hash: Hash): Promise<UserOperationReceipt | null> {
     try {
-      return await this.provider.getUserOperationReceipt(hash)
+      return await this.client.getUserOperationReceipt(hash)
     } catch (error) {
       throw new Error(
         `Failed to get user operation receipt: ${error instanceof Error ? error.message : error}`,

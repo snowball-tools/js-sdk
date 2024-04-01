@@ -251,6 +251,11 @@ export class SnowballChain {
     this.entryPointAddress = data.entryPointAddress
   }
 
+  alchemyRpcUrls(apiKey: string): string[] {
+    // Normalize URLs to prevent mistakes
+    return this.rpcUrls.map((rpcUrl) => `${rpcUrl.replace(/\/$/, '')}/${apiKey}`)
+  }
+
   toViemChain(): ViemChain {
     const chain = SnowballChain.toViemMap.get(this.chainId)
     if (!chain) {

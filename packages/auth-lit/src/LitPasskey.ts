@@ -53,7 +53,7 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
     ) as WebAuthnProvider
 
     this.litNodeClient = new LitNodeClient({
-      litNetwork: opts.litNetwork || 'serrano',
+      litNetwork: opts.litNetwork || 'cayenne',
       debug: true,
     })
   }

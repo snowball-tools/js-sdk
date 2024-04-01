@@ -14,10 +14,10 @@
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
-		"@alchemy/aa-core": "^1.2.0",
+		"@alchemy/aa-core": "^3.6.1",
 		"@snowballtools/types": "*",
-		"alchemy-sdk": "^2.10.0",
-		"viem": "^1.19.8"
+		"alchemy-sdk": "^3.2.0",
+		"viem": "2.x"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
