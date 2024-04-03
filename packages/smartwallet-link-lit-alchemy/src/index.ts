@@ -3,7 +3,6 @@ import { SmartWalletApiKeys } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
-import { Address, SmartAccountSigner } from '@alchemy/aa-core'
 import type { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
 
 import { PkpLitSigner } from './PkpLitSigner'
@@ -29,38 +28,7 @@ export const SmartWalletLinkAlchemyLit = {
             'LINK_ALCHEMY_LIT_NO_API_KEY',
           )
         }
-
         const signer = new PkpLitSigner(wallet)
-        // const signer: SmartAccountSigner = {
-        //   signerType: 'PKP',
-        //   inner: wallet,
-        //   signMessage: async (msg) =>
-        //     (await wallet.signMessage(typeof msg === 'string' ? msg : msg.raw)) as Address,
-        //   getAddress: async () => (await wallet.getAddress()) as Address,
-        //   signTypedData: async (params) => {
-        //     return (await wallet._signTypedData(
-        //       params.domain ? params.domain : {},
-        //       params.types as any,
-        //       params.message as Record<string, any>,
-        //     )) as Address
-        //   },
-        // }
-        // const provider = new AlchemyProvider({
-        //   chain: chain.toViemChain(),
-        //   apiKey,
-        //   entryPointAddress: chain.entryPointAddress,
-        // })
-
-        // const client = await createLightAccountAlchemyClient({
-        //   chain: chain.toViemChain(),
-        //   apiKey,
-        //   signer,
-        // })
-
-        // const smartAccountClient = createSmartAccountClient({
-        //   account: provider.account,
-        //   transport: provider.transport,
-        // })
 
         return await AlchemySmartWallet.make(chain, signer, keys)
       }

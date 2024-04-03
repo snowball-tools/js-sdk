@@ -1,5 +1,4 @@
 import { SnowballPasskeyAuth } from '@snowballtools/auth'
-import type { Chain } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
 import { Address } from '@snowballtools/types'
 import { DEFAULT_EXP, SnowballChain } from '@snowballtools/utils'
@@ -12,6 +11,7 @@ import { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
 import type {
   AuthCallbackParams,
   AuthMethod,
+  IRelayPKP,
   IRelayPollStatusResponse,
   SessionSigsMap,
 } from '@lit-protocol/types'
@@ -33,17 +33,23 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
     return (chain: SnowballChain) => new LitPasskeyAuth({ ...opts, chain })
   }
 
-  constructor(opts: ConfigOptions & { chain: Chain }) {
+  constructor(opts: ConfigOptions & { chain: SnowballChain }) {
     super(opts.chain)
 
     if (!opts.litReplayApiKey) {
       throw new SnowballError('[LitPasskey] Missing litReplayApiKey', 'missing.litReplayApiKey')
     }
 
+    this.litNodeClient = new LitNodeClient({
+      litNetwork: opts.litNetwork || 'cayenne',
+      debug: true,
+    })
+
     this.litAuthClient = new LitAuthClient({
       litRelayConfig: {
-        relayApiKey: opts.litReplayApiKey,
+        relayApiKey: 'test-api-key',
       },
+      litNodeClient: this.litNodeClient,
     })
 
     this.litAuthClient.initProvider(ProviderType.WebAuthn)
@@ -51,11 +57,6 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
     this.webAuthnProvider = this.litAuthClient.getProvider(
       ProviderType.WebAuthn,
     ) as WebAuthnProvider
-
-    this.litNodeClient = new LitNodeClient({
-      litNetwork: opts.litNetwork || 'cayenne',
-      debug: true,
-    })
   }
 
   async register(username: string) {
@@ -88,13 +89,12 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
       return this.setError(makeError(2, err))
     }
 
-    console.log('REGISTERED?', {
-      pkpEthAddress: response.pkpEthAddress,
-      pkpPublicKey: response.pkpPublicKey,
-    })
-
-    if (response.pkpPublicKey === undefined) {
+    if (response.status !== 'Succeeded') {
       return this.setError(makeError(3, response))
+    }
+
+    if (!response.pkpPublicKey) {
+      return this.setError(makeError(4, response))
     }
 
     this.setLoading(null)
@@ -135,19 +135,13 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
 
     if (this.sessionSig === undefined) {
       try {
-        this.sessionSig = await this.getSessionSigs(
-          'LitPasskey.getEthersWallet',
-          this._state.authMethod,
-        )
+        this.sessionSig = await this.getSessionSigs(this._state.authMethod)
       } catch (err) {
         return this.setError(makeError(1, err))
       }
     }
 
-    const pkpPublicKey = await this.getPkpPublicKey(
-      'LitPasskey.getEthersWallet',
-      this._state.authMethod,
-    )
+    const pkpPublicKey = await this.getPkpPublicKey(this._state.authMethod)
 
     try {
       this.setLoading('Creating Ethers wallet')
@@ -175,9 +169,9 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
     return (await wallet.getAddress()) as Address
   }
 
-  private async getPkpPublicKey(prefix: string, auth: AuthMethod): Promise<string> {
+  private async getPkpPublicKey(auth: AuthMethod): Promise<string> {
     if (!this._pkpPublicKey) {
-      const makeError = SnowballError.builder(`${prefix}.fetchPkps`, 'Error fetching PKPs')
+      const makeError = SnowballError.builder('fetchPkps', 'Error fetching PKPs')
       try {
         this.setLoading('Fetching PKPs')
         var pkps = await this.webAuthnProvider.fetchPKPsThroughRelayer(auth)
@@ -196,44 +190,29 @@ export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMet
   }
 
   private async getSessionSigs(
-    prefix: string,
     auth: AuthMethod,
     switchChain: boolean = false,
   ): Promise<SessionSigsMap> {
-    const makeError = SnowballError.builder(
-      `${prefix}.getSessionSigs`,
-      'Error fetching session sigs',
-    )
+    const makeError = SnowballError.builder(`getSessionSigs`, 'Error fetching session sigs')
 
-    const pkpPublicKey = await this.getPkpPublicKey(`${prefix}.getSessionSigs`, auth)
+    const pkpPublicKey = await this.getPkpPublicKey(auth)
 
     try {
       this.setLoading('Getting session sigs')
-      await this.litNodeClient.connect()
-
-      const authNeededCallback = async (params: AuthCallbackParams) => {
-        const resp = await this.litNodeClient.signSessionKey({
-          statement: params.statement,
-          authMethods: [auth],
-          pkpPublicKey,
-          expiration: params.expiration,
-          resources: params.resources,
-          chainId: this.chain.chainId,
-        })
-        return resp.authSig
-      }
-
-      this.sessionSig = await this.litNodeClient.getSessionSigs({
-        expiration: DEFAULT_EXP,
-        chain: this.chain.name,
-        resourceAbilityRequests: [
-          {
-            resource: new LitActionResource('*'),
-            ability: LitAbility.PKPSigning,
-          },
-        ],
-        switchChain,
-        authNeededCallback: authNeededCallback,
+      this.sessionSig = await this.webAuthnProvider.getSessionSigs({
+        pkpPublicKey,
+        authMethod: auth,
+        sessionSigsParams: {
+          chain: this.chain.name.toLowerCase(),
+          expiration: DEFAULT_EXP,
+          switchChain,
+          resourceAbilityRequests: [
+            {
+              resource: new LitActionResource('*'),
+              ability: LitAbility.PKPSigning,
+            },
+          ],
+        },
       })
     } catch (error) {
       return this.setError(makeError(0, error))

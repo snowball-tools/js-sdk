@@ -1,6 +1,7 @@
 import { Address, Hash, Hex, SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
+import { getDefaultLightAccountFactoryAddress } from '@alchemy/aa-accounts'
 import { AlchemySmartAccountClient, createLightAccountAlchemyClient } from '@alchemy/aa-alchemy'
 import {
   SendUserOperationParameters,
@@ -23,15 +24,13 @@ export class AlchemySmartWallet {
   ethersWallet: PKPEthersWallet | undefined
 
   static async make(chain: SnowballChain, signer: SmartAccountSigner, apiKeys: ApiKeys) {
-    console.log(200, apiKeys.gasPolicyId)
     const client = await createLightAccountAlchemyClient({
       chain: chain.toViemChain(),
       rpcUrl: chain.alchemyRpcUrls(apiKeys.apiKey)[0],
       signer,
-      factoryAddress: chain.factoryAddress,
+      factoryAddress: getDefaultLightAccountFactoryAddress(chain.toViemChain()),
       gasManagerConfig: apiKeys.gasPolicyId ? { policyId: apiKeys.gasPolicyId } : undefined,
     })
-    console.log(201)
     return new AlchemySmartWallet(chain, client, apiKeys)
   }
 
@@ -43,11 +42,9 @@ export class AlchemySmartWallet {
 
   async getAddress(): Promise<Address> {
     try {
-      // TODO: Types are requiring account, but I don't think we need it
-      // const addr = await this.client.getAddress({ account: this.client.account! })
+      // TODO: Types are requiring an account field, but runtime does not
       //@ts-ignore
       const addr = await this.client.getAddress()
-      console.log('Alchemy getAddress', addr)
       return addr
     } catch (error) {
       throw new Error(`Failed to get address: ${error instanceof Error ? error.message : error}`)
@@ -59,10 +56,9 @@ export class AlchemySmartWallet {
     uo: SendUserOperationParameters<SmartContractAccount | undefined>['uo'],
   ): Promise<{ hash: string }> {
     try {
-      console.log('AHHHH')
+      // TODO: Types are requiring an account field, but runtime does not
       //@ts-ignore
       const response = await this.client.sendUserOperation({
-        account: this.client.account!,
         uo,
       })
       return { hash: response.hash }

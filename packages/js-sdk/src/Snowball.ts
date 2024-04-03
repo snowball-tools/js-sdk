@@ -73,46 +73,6 @@ export class Snowball<
     return this.chainEntries.get(this.currentChainId)!.smartWallet
   }
 
-  // private async initSmartWallet(): Promise<SmartWallet> {
-  //   if (this.smartWalletProviderInfo.name === SmartWalletProvider.alchemy) {
-  //     const provider = new AlchemyProvider({
-  //       chain: viemChain(this.chain),
-  //       apiKey: alchemyAPIKey(this.chain, this.smartWalletProviderInfo.apiKeys),
-  //       entryPointAddress: this.chain.entryPointAddress,
-  //     })
-  //     if (this.SnowballAuthClass instanceof LitPasskey) {
-  //       const pkpWallet = await (this.SnowballAuthClass as LitPasskey).getEthersWallet()
-  //       const signer: SmartAccountSigner = {
-  //         signerType: 'PKP',
-  //         inner: pkpWallet,
-  //         signMessage: async (msg: Hex | Uint8Array | string) =>
-  //           (await pkpWallet.signMessage(msg)) as Address,
-  //         getAddress: async () => (await pkpWallet.getAddress()) as Address,
-  //         signTypedData: async (params: SignTypedDataParams) => {
-  //           const types: Record<string, TypedDataField[]> = {
-  //             [params.primaryType]: params.types['x']!.map(
-  //               (value) =>
-  //                 ({
-  //                   name: value.name,
-  //                   type: value.type,
-  //                 }) as TypedDataField,
-  //             ),
-  //           }
-  //           return (await pkpWallet._signTypedData(
-  //             params.domain ? params.domain : {},
-  //             types,
-  //             params.message,
-  //           )) as Address
-  //         },
-  //       }
-  //       return new AlchemySmartWallet(this.chain, this.smartWalletProviderInfo, provider, signer)
-  //     }
-  //     throw new Error('Unsupported auth provider')
-  //   } else {
-  //     throw new Error('Unsupported smart wallet provider')
-  //   }
-  // }
-
   async switchChain(chain: SnowballChain) {
     if (this.chainEntries.has(chain.chainId)) {
       this.currentChainId = chain.chainId

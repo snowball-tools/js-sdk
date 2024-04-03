@@ -44,6 +44,6 @@ export abstract class SnowballPasskeyAuth<Wallet, AuthMethod> extends SnowballAu
 
   protected setError(error: SnowballError) {
     this.setState({ ...this._state, error, loading: undefined })
-    return Promise.reject()
+    return Promise.reject(error)
   }
 }
