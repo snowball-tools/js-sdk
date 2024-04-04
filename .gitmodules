@@ -1,0 +1,3 @@
+[submodule "app-showcase/showcase.igloo"]
+	path = app-showcase/showcase.igloo
+	url = git@github.com:snowball-tools/showcase.igloo.git
