@@ -1,5 +1,5 @@
-import { Address, Hash, Hex, SnowballError } from '@snowballtools/types'
-import { SnowballChain } from '@snowballtools/utils'
+import type { Address, Hash } from '@snowballtools/types'
+import type { SnowballChain } from '@snowballtools/utils'
 
 import { getDefaultLightAccountFactoryAddress } from '@alchemy/aa-accounts'
 import { AlchemySmartAccountClient, createLightAccountAlchemyClient } from '@alchemy/aa-alchemy'
@@ -20,7 +20,7 @@ type ApiKeys = {
   gasPolicyId?: string
 }
 
-export class AlchemySmartWallet {
+export class AlchemySmartWalletLight {
   ethersWallet: PKPEthersWallet | undefined
 
   static async make(chain: SnowballChain, signer: SmartAccountSigner, apiKeys: ApiKeys) {
@@ -31,7 +31,7 @@ export class AlchemySmartWallet {
       factoryAddress: getDefaultLightAccountFactoryAddress(chain.toViemChain()),
       gasManagerConfig: apiKeys.gasPolicyId ? { policyId: apiKeys.gasPolicyId } : undefined,
     })
-    return new AlchemySmartWallet(chain, client, apiKeys)
+    return new AlchemySmartWalletLight(chain, client, apiKeys)
   }
 
   constructor(
@@ -41,63 +41,32 @@ export class AlchemySmartWallet {
   ) {}
 
   async getAddress(): Promise<Address> {
-    try {
-      // TODO: Types are requiring an account field, but runtime does not
-      //@ts-ignore
-      const addr = await this.client.getAddress()
-      return addr
-    } catch (error) {
-      throw new Error(`Failed to get address: ${error instanceof Error ? error.message : error}`)
-    }
+    // TODO: Types are requiring an account field, but runtime does not
+    //@ts-ignore
+    return await this.client.getAddress()
   }
 
   /** Convenience helper. For full configuration, use .client.sendUserOperation() */
-  async sendUserOperation(
+  async sendUserOp(
     uo: SendUserOperationParameters<SmartContractAccount | undefined>['uo'],
   ): Promise<{ hash: string }> {
-    try {
-      // TODO: Types are requiring an account field, but runtime does not
-      //@ts-ignore
-      const response = await this.client.sendUserOperation({
-        uo,
-      })
-      return { hash: response.hash }
-    } catch (error) {
-      throw new Error(
-        `Failed to send user operation: ${error instanceof Error ? error.message : error}`,
-      )
-    }
+    // TODO: Types are requiring an account field, but runtime does not
+    //@ts-ignore
+    const response = await this.client.sendUserOperation({
+      uo,
+    })
+    return { hash: response.hash }
   }
 
   async waitForUserOperationTransaction(params: WaitForUserOperationTxParameters): Promise<Hash> {
-    try {
-      return await this.client.waitForUserOperationTransaction(params)
-    } catch (error) {
-      throw new Error(
-        `Failed to wait for user operation transaction: ${
-          error instanceof Error ? error.message : error
-        }`,
-      )
-    }
+    return await this.client.waitForUserOperationTransaction(params)
   }
 
   async getUserOperationByHash(hash: Hash): Promise<UserOperationResponse | null> {
-    try {
-      return await this.client.getUserOperationByHash(hash)
-    } catch (error) {
-      throw new Error(
-        `Failed to get user operation by hash: ${error instanceof Error ? error.message : error}`,
-      )
-    }
+    return await this.client.getUserOperationByHash(hash)
   }
 
   async getUserOperationReceipt(hash: Hash): Promise<UserOperationReceipt | null> {
-    try {
-      return await this.client.getUserOperationReceipt(hash)
-    } catch (error) {
-      throw new Error(
-        `Failed to get user operation receipt: ${error instanceof Error ? error.message : error}`,
-      )
-    }
+    return await this.client.getUserOperationReceipt(hash)
   }
 }

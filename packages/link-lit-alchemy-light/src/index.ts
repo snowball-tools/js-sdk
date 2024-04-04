@@ -1,4 +1,4 @@
-import { AlchemySmartWallet } from '@snowballtools/smartwallet-alchemy'
+import { AlchemySmartWalletLight } from '@snowballtools/smartwallet-alchemy-light'
 import { SmartWalletApiKeys } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
@@ -13,7 +13,7 @@ export type LinkOptions = {
   alchemyApiKeys: Record<number, SmartWalletApiKeys>
 }
 
-export const SmartWalletLinkAlchemyLit = {
+export const LinkLitAlchemyLight = {
   pkpEthersWallet: {
     configure(opts: LinkOptions) {
       return async function makeAlchemySmartWalletFromLitWallet(
@@ -25,12 +25,12 @@ export const SmartWalletLinkAlchemyLit = {
         if (!keys || !apiKey) {
           throw new SnowballError(
             `No Alchemy API key found for chain ${chain.name} (${chain.chainId})`,
-            'LINK_ALCHEMY_LIT_NO_API_KEY',
+            'SmartWalletLinkAlchemyLit.noApiKey',
           )
         }
         const signer = new PkpLitSigner(wallet)
 
-        return await AlchemySmartWallet.make(chain, signer, keys)
+        return await AlchemySmartWalletLight.make(chain, signer, keys)
       }
     },
   },

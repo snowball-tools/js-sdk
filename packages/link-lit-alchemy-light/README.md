@@ -1,10 +1,4 @@
-[text](../utils/LICENSE.md)# @snowballtools/smartwallet-alchemy
-
-## Description
-
-This package is responsible for handling Smart Wallets ([ERC-4337](https://eips.ethereum.org/EIPS/eip-4337), AA).
-
-## Features
+# @snowballtools/smartwallet-alchemy
 
 - [Alchemy Light Accounts](https://www.alchemy.com/)
 
