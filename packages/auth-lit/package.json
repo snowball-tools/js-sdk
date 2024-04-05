@@ -10,7 +10,8 @@
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts"
+		"build": "snowball-build-ts src/index.ts",
+		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
 		"@lit-protocol/auth-helpers": "3.0.32",

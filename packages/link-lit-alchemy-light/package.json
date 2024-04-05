@@ -1,7 +1,7 @@
 {
-	"name": "@snowballtools/auth",
+	"name": "@snowballtools/link-lit-alchemy-light",
 	"version": "0.0.0",
-	"description": "snowballtools auth",
+	"description": "aa",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
 	"types": "./dist/index.d.ts",
@@ -14,10 +14,14 @@
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
+		"@alchemy/aa-alchemy": "^3.6.1",
+		"@alchemy/aa-core": "^3.6.1",
 		"@lit-protocol/pkp-ethers": "3.0.32",
-		"@lit-protocol/types": "3.0.32",
+		"@snowballtools/smartwallet-alchemy-light": "*",
 		"@snowballtools/types": "*",
-		"@snowballtools/utils": "*"
+		"@snowballtools/utils": "*",
+		"ethers": "^6.11.1",
+		"viem": "2.x"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
@@ -27,6 +31,7 @@
 	"author": "Snowball Tools Inc.",
 	"license": "MIT",
 	"keywords": [
-		"auth"
+		"smartwallet",
+		"aa"
 	]
 }

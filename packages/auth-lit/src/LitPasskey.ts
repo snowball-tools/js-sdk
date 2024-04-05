@@ -1,6 +1,7 @@
-import { Passkey } from '@snowballtools/auth'
-import type { AuthProviderInfo, Chain } from '@snowballtools/types'
-import { DEFAULT_EXP } from '@snowballtools/utils'
+import { SnowballPasskeyAuth } from '@snowballtools/auth'
+import { SnowballError } from '@snowballtools/types'
+import { Address } from '@snowballtools/types'
+import { DEFAULT_EXP, SnowballChain } from '@snowballtools/utils'
 
 import { LitAbility, LitActionResource } from '@lit-protocol/auth-helpers'
 import { ProviderType } from '@lit-protocol/constants'
@@ -15,23 +16,40 @@ import type {
   SessionSigsMap,
 } from '@lit-protocol/types'
 
-export class LitPasskey extends Passkey {
+type ConfigOptions = {
+  litReplayApiKey: string
+  litNetwork?: string
+}
+
+export class LitPasskeyAuth extends SnowballPasskeyAuth<PKPEthersWallet, AuthMethod> {
   litAuthClient: LitAuthClient
   webAuthnProvider: WebAuthnProvider
-  litNodeClient: typeof LitNodeClientNodeJs
+  litNodeClient: LitNodeClient
 
-  private authenticated: AuthMethod | undefined
-  private pkpPublicKey: string | undefined
+  private _pkpPublicKey: string | undefined
   private sessionSig: SessionSigsMap | undefined
-  private pkpWallet: PKPEthersWallet | undefined
 
-  constructor(chain: Chain, authProvider: AuthProviderInfo) {
-    super(chain, authProvider)
+  static configure(opts: ConfigOptions) {
+    return (chain: SnowballChain) => new LitPasskeyAuth({ ...opts, chain })
+  }
+
+  constructor(opts: ConfigOptions & { chain: SnowballChain }) {
+    super(opts.chain)
+
+    if (!opts.litReplayApiKey) {
+      throw new SnowballError('[LitPasskey] Missing litReplayApiKey', 'missing.litReplayApiKey')
+    }
+
+    this.litNodeClient = new LitNodeClient({
+      litNetwork: opts.litNetwork || 'cayenne',
+      debug: true,
+    })
 
     this.litAuthClient = new LitAuthClient({
       litRelayConfig: {
-        relayApiKey: this.authProviderInfo.apiKeys['relayKey'] || 'snowball',
+        relayApiKey: opts.litReplayApiKey,
       },
+      litNodeClient: this.litNodeClient,
     })
 
     this.litAuthClient.initProvider(ProviderType.WebAuthn)
@@ -39,134 +57,171 @@ export class LitPasskey extends Passkey {
     this.webAuthnProvider = this.litAuthClient.getProvider(
       ProviderType.WebAuthn,
     ) as WebAuthnProvider
-
-    this.litNodeClient = new LitNodeClient({
-      litNetwork: 'serrano',
-      debug: true,
-    })
   }
 
-  async registerPasskey(username: string): Promise<void> {
+  async register(username: string) {
+    if (this._state.name !== 'init') {
+      console.warn(`[Snowball] no-op: register() while in state '${this._state.name}'`)
+      return
+    }
+
+    const makeError = SnowballError.builder('LitPasskey.register', 'Error registering passkey')
+
     try {
-      const options = await this.webAuthnProvider.register(username)
-      const txHash = await this.webAuthnProvider.verifyAndMintPKPThroughRelayer(options)
-      const response: IRelayPollStatusResponse =
+      this.setLoading('Registering passkey')
+      var options = await this.webAuthnProvider.register(username)
+    } catch (err) {
+      return this.setError(makeError(0, err))
+    }
+
+    try {
+      this.setLoading('Verifying and minting PKP')
+      var txHash = await this.webAuthnProvider.verifyAndMintPKPThroughRelayer(options)
+    } catch (err) {
+      return this.setError(makeError(1, err))
+    }
+
+    try {
+      this.setLoading('Waiting for registration status')
+      var response: IRelayPollStatusResponse =
         await this.webAuthnProvider.relay.pollRequestUntilTerminalState(txHash)
-
-      if (response.pkpPublicKey === undefined) {
-        return Promise.reject(`pollRequestUntilTerminalState failed ${response}`)
-      }
-
-      this.pkpPublicKey = response.pkpPublicKey
-
-      return Promise.resolve()
-    } catch (error) {
-      return Promise.reject(`registerPasskey failed: ${JSON.stringify(error)}`)
+    } catch (err) {
+      return this.setError(makeError(2, err))
     }
+
+    if (response.status !== 'Succeeded') {
+      return this.setError(makeError(3, response))
+    }
+
+    if (!response.pkpPublicKey) {
+      return this.setError(makeError(4, response))
+    }
+
+    this.setLoading(null)
+    this._pkpPublicKey = response.pkpPublicKey
   }
 
-  async authenticatePasskey(): Promise<void> {
-    try {
-      this.authenticated = await this.webAuthnProvider.authenticate()
-
-      return Promise.resolve()
-    } catch (error) {
-      return Promise.reject(`Authentication failed ${JSON.stringify(error)}`)
+  async authenticate(): Promise<void> {
+    if (this._state.name !== 'init') {
+      console.warn(`[Snowball] no-op: authenticate() while in state '${this._state.name}'`)
+      return
     }
-  }
-
-  async fetchPkpsForAuthMethod(): Promise<IRelayPKP[]> {
     try {
-      if (this.authenticated === undefined) {
-        await this.authenticatePasskey()
-      }
-
-      const pkps = await this.webAuthnProvider.fetchPKPsThroughRelayer(this.authenticated!)
-
-      if (pkps.length === 0 || pkps === undefined) {
-        // TODO: Consider not throwing
-        return Promise.reject('No PKPs found')
-      }
-
-      // TODO: Don't mutate
-      this.pkpPublicKey = pkps[0]!.publicKey
-
-      return pkps
-    } catch (error) {
-      return Promise.reject(`Retrieving PKPs failed ${JSON.stringify(error)}`)
-    }
-  }
-
-  async getSessionSigs(switchChain: boolean = false): Promise<SessionSigsMap> {
-    try {
-      if (this.pkpPublicKey === undefined) {
-        const pkps = await this.fetchPkpsForAuthMethod()
-        // TODO: Check for undefined?
-        this.pkpPublicKey = pkps[0]?.publicKey
-      }
-
-      await this.litNodeClient.connect()
-
-      const authNeededCallback = async (params: AuthCallbackParams) => {
-        const resp = await this.litNodeClient.signSessionKey({
-          statement: params.statement,
-          authMethods: [this.authenticated!],
-          pkpPublicKey: this.pkpPublicKey,
-          expiration: params.expiration,
-          resources: params.resources,
-          chainId: this.chain.chainId,
-        })
-        return resp.authSig
-      }
-
-      this.sessionSig = await this.litNodeClient.getSessionSigs({
-        expiration: DEFAULT_EXP,
-        chain: this.chain.name,
-        resourceAbilityRequests: [
-          {
-            resource: new LitActionResource('*'),
-            ability: LitAbility.PKPSigning,
-          },
-        ],
-        switchChain,
-        authNeededCallback: authNeededCallback,
+      this.setLoading('Authenticating passkey')
+      this.setState({
+        name: 'authenticated',
+        authMethod: await this.webAuthnProvider.authenticate(),
       })
-
-      if (this.sessionSig === undefined) {
-        return Promise.reject('No session sigs found')
-      }
-
-      return this.sessionSig!
     } catch (error) {
-      return Promise.reject(`Retrieving session sigs failed ${JSON.stringify(error)}`)
+      return this.setError(
+        new SnowballError('LitPasskey.authenticate', 'Error authenticating passkey', error),
+      )
     }
   }
 
-  async getEthersWallet(): Promise<PKPEthersWallet> {
+  async getEthersWallet() {
+    if (this._state.name === 'wallet-ready') {
+      return this._state.pkpWallet
+    }
+
+    const makeError = SnowballError.builder(
+      'LitPasskey.getEthersWallet',
+      'Error getting Ethers wallet',
+    )
+
+    if (this._state.name !== 'authenticated') {
+      return this.setError(makeError(0, 'Not authenticated'))
+    }
+
+    if (this.sessionSig === undefined) {
+      try {
+        this.sessionSig = await this.getSessionSigs(this._state.authMethod)
+      } catch (err) {
+        return this.setError(makeError(1, err))
+      }
+    }
+
+    const pkpPublicKey = await this.getPkpPublicKey(this._state.authMethod)
+
     try {
-      if (this.sessionSig === undefined) {
-        this.sessionSig = await this.getSessionSigs()
-      }
-
-      if (this.pkpPublicKey === undefined) {
-        const pkps = await this.fetchPkpsForAuthMethod()
-        this.pkpPublicKey = pkps[0]?.publicKey
-      }
-
-      if (!this.pkpPublicKey) {
-        return Promise.reject('No PKP public key found')
-      }
-
-      this.pkpWallet = new PKPEthersWallet({
+      this.setLoading('Creating Ethers wallet')
+      var wallet = new PKPEthersWallet({
         controllerSessionSigs: this.sessionSig,
-        pkpPubKey: this.pkpPublicKey,
+        pkpPubKey: pkpPublicKey,
         rpc: 'https://chain-rpc.litprotocol.com/http',
       })
-      await this.pkpWallet.init()
-
-      return this.pkpWallet
+      await wallet.init()
     } catch (error) {
-      return Promise.reject(`Transaction failed ${JSON.stringify(error)}`)
+      return this.setError(makeError(2, error))
     }
+
+    this.setState({
+      name: 'wallet-ready',
+      authMethod: this._state.authMethod,
+      pkpWallet: wallet,
+    })
+
+    return wallet
+  }
+
+  async getEthersWalletAddress() {
+    const wallet = await this.getEthersWallet()
+    return (await wallet.getAddress()) as Address
+  }
+
+  private async getPkpPublicKey(auth: AuthMethod): Promise<string> {
+    if (!this._pkpPublicKey) {
+      const makeError = SnowballError.builder('fetchPkps', 'Error fetching PKPs')
+      try {
+        this.setLoading('Fetching PKPs')
+        var pkps = await this.webAuthnProvider.fetchPKPsThroughRelayer(auth)
+      } catch (error) {
+        return this.setError(makeError(0, error))
+      }
+
+      this._pkpPublicKey = pkps[0]?.publicKey
+
+      if (this._pkpPublicKey === undefined) {
+        return this.setError(makeError(1, 'No PKP public key found'))
+      }
+    }
+
+    return this._pkpPublicKey
+  }
+
+  private async getSessionSigs(
+    auth: AuthMethod,
+    switchChain: boolean = false,
+  ): Promise<SessionSigsMap> {
+    const makeError = SnowballError.builder(`getSessionSigs`, 'Error fetching session sigs')
+
+    const pkpPublicKey = await this.getPkpPublicKey(auth)
+
+    try {
+      this.setLoading('Getting session sigs')
+      this.sessionSig = await this.webAuthnProvider.getSessionSigs({
+        pkpPublicKey,
+        authMethod: auth,
+        sessionSigsParams: {
+          chain: this.chain.name.toLowerCase(),
+          expiration: DEFAULT_EXP,
+          switchChain,
+          resourceAbilityRequests: [
+            {
+              resource: new LitActionResource('*'),
+              ability: LitAbility.PKPSigning,
+            },
+          ],
+        },
+      })
+    } catch (error) {
+      return this.setError(makeError(0, error))
+    }
+
+    if (!this.sessionSig) {
+      return this.setError(makeError(1, 'No session sig found'))
+    }
+
+    return this.sessionSig
   }
 }
