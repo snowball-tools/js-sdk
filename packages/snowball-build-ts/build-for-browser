@@ -1,0 +1,60 @@
+#!/usr/bin/env node
+
+const esbuild = require('esbuild');
+const path = require('path');
+const fs = require('fs');
+
+// Get the entry file from the command line arguments
+const entryFile = process.argv[2];
+if (!entryFile) {
+  console.error('Usage: build-for-browser <entry-file>');
+  process.exit(1);
+}
+
+// Load the calling package's package.json to read browserMappings
+const packageJsonPath = path.join(process.cwd(), 'package.json');
+const packageJson = JSON.parse(fs.readFileSync(packageJsonPath, 'utf8'));
+const browserMappings = packageJson.browserMappings || {};
+
+const browserShimsPath = path.join(process.cwd(), 'browser-shims.js');
+const browserShimsExists = fs.existsSync(browserShimsPath);
+
+// Separate mappings into aliases for polyfills/replacements and exclusions
+const { aliases, exclusions } = Object.keys(browserMappings).reduce((acc, key) => {
+  if (browserMappings[key] === "!exclude") {
+    acc.exclusions.push(key); // Mark this module as external
+  } else {
+    acc.aliases[key] = require.resolve(browserMappings[key], { paths: [process.cwd()] });
+  }
+  return acc;
+}, { aliases: {}, exclusions: [] });
+
+// Define the alias plugin
+const aliasPlugin = {
+  name: 'alias',
+  setup(build) {
+    Object.keys(aliases).forEach(alias => {
+      build.onResolve({ filter: new RegExp(`^${alias}$`) }, args => ({
+        path: aliases[alias],
+      }));
+    });
+  },
+};
+
+console.log("Bundling browser esm", entryFile)
+esbuild.build({
+  entryPoints: [entryFile],
+  bundle: true,
+  platform: 'browser',
+  target: ['es2020'],
+  outfile: 'dist/index.browser.mjs',
+  format: 'esm',
+  define: {
+    'process.env.NODE_ENV': '"production"',
+  },
+  external: exclusions, // Use exclusions for the external option
+  plugins: [aliasPlugin], // Use the alias plugin
+  inject: browserShimsExists ? [browserShimsPath] : [],
+
+  resolveExtensions: ['.js', '.jsx', '.ts', '.tsx'],
+}).catch(() => process.exit(1));

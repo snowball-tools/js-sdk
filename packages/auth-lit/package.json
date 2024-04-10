@@ -1,16 +1,19 @@
 {
 	"name": "@snowballtools/auth-lit",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "snowballtools auth-passkey",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
+	"browser": {
+		"./dist/index.mjs": "./dist/index.browser.mjs"
+	},
 	"types": "./dist/index.d.ts",
 	"files": [
 		"dist/**/*",
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts",
+		"build": "snowball-build-ts src/index.ts && snowball-build-for-browser src/index.ts",
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
@@ -26,7 +29,19 @@
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
-		"@internal/typescript-config": "*"
+		"@internal/typescript-config": "*",
+		"browserify-zlib": "^0.2.0",
+		"buffer": "^6.0.3",
+		"crypto-browserify": "^3.12.0",
+		"stream-browserify": "^3.0.0"
+	},
+	"browserMappings": {
+		"crypto": "crypto-browserify",
+		"http": "!exclude",
+		"https": "!exclude",
+		"stream": "stream-browserify",
+		"url": "!exclude",
+		"zlib": "!exclude"
 	},
 	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
 	"author": "Snowball Tools Inc.",

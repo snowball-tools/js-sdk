@@ -1,5 +1,5 @@
 {
-  "name": "@internal/snowball-build-ts",
+  "name": "@internal/test-runner",
   "version": "1.0.0",
   "private": true,
   "description": "",
@@ -7,12 +7,11 @@
     "test": "echo \"Error: no test specified\" && exit 1"
   },
   "bin": {
-    "snowball-build-ts": "./build-cmd.sh",
-    "snowball-build-for-browser": "./build-for-browser"
+    "run-tests": "./run-tests.sh"
   },
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "tsup": "^8.0.2"
+    "@types/bun": "^1.0.12"
   }
 }

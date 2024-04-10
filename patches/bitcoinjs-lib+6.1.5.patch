@@ -1,0 +1,12 @@
+diff --git a/node_modules/bitcoinjs-lib/src/script_signature.js b/node_modules/bitcoinjs-lib/src/script_signature.js
+index 638e5f2..dfc38e7 100644
+--- a/node_modules/bitcoinjs-lib/src/script_signature.js
++++ b/node_modules/bitcoinjs-lib/src/script_signature.js
+@@ -1,6 +1,7 @@
+ 'use strict';
+ Object.defineProperty(exports, '__esModule', { value: true });
+ exports.encode = exports.decode = void 0;
++const Buffer = require('buffer').Buffer
+ const bip66 = require('./bip66');
+ const types = require('./types');
+ const { typeforce } = types;

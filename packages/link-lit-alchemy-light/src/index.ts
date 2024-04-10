@@ -24,8 +24,8 @@ export const LinkLitAlchemyLight = {
         const apiKey = keys?.apiKey
         if (!keys || !apiKey) {
           throw new SnowballError(
+            'missing.apiKey',
             `No Alchemy API key found for chain ${chain.name} (${chain.chainId})`,
-            'SmartWalletLinkAlchemyLit.noApiKey',
           )
         }
         const signer = new PkpLitSigner(wallet)

@@ -1,6 +1,6 @@
 {
 	"name": "@snowballtools/link-lit-alchemy-light",
-	"version": "0.0.0",
+	"version": "0.0.1",
 	"description": "aa",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",

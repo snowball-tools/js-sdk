@@ -1,26 +1,28 @@
 {
-	"name": "@snowballtools/types",
-	"version": "0.0.0",
-	"description": "snowballtools types",
-	"main": "./dist/index.js",
-	"module": "./dist/index.mjs",
-	"types": "./dist/index.d.ts",
-	"files": [
-		"dist/**/*",
-		"src/**/*"
-	],
-	"scripts": {
-		"build": "snowball-build-ts src/index.ts",
-		"watch": "snowball-build-ts src/index.ts --watch"
-	},
-	"devDependencies": {
-		"@internal/snowball-build-ts": "*",
-		"@internal/typescript-config": "*"
-	},
-	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
-	"author": "Snowball Tools Inc.",
-	"license": "MIT",
-	"keywords": [
-		"types"
-	]
+  "name": "@snowballtools/types",
+  "version": "0.0.1",
+  "author": "Snowball Tools Inc.",
+  "repository": "https://github.com/snowball-tools/snowball-ts-sdk",
+  "main": "./dist/index.js",
+  "module": "./dist/index.mjs",
+  "devDependencies": {
+    "@internal/snowball-build-ts": "*",
+    "@internal/test-runner": "*",
+    "@internal/typescript-config": "*"
+  },
+  "description": "snowballtools types",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "keywords": [
+    "types"
+  ],
+  "license": "MIT",
+  "scripts": {
+    "test": "run-tests",
+    "build": "snowball-build-ts src/index.ts",
+    "watch": "snowball-build-ts src/index.ts --watch"
+  },
+  "types": "./dist/index.d.ts"
 }

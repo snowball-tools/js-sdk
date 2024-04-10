@@ -1,6 +1,9 @@
 import { SnowballAuth, SnowballSmartWallet } from '@snowballtools/auth'
 import { Address } from '@snowballtools/types'
+import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
+
+import { makePubSub } from './pubsub'
 
 type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
 
@@ -25,13 +28,24 @@ export class Snowball<
     number,
     { chain: SnowballChain; auth: Auth; smartWallet?: SmartWallet }
   >()
-  private currentChainId: number
+  private currentChainId!: number
+
+  private pubsub = makePubSub()
 
   static Chain = SnowballChain
 
   // Builder for type inference
   static withAuth<A extends SnowballAuth<any, any>>(makeAuth: (chain: SnowballChain) => A) {
     return {
+      create(opts: { initialChain: SnowballChain }) {
+        return new Snowball<A, never>({
+          chain: opts.initialChain,
+          makeAuth,
+          makeSmartWallet: async () => {
+            throw new SnowballError('missing.smartWallet', 'No SmartWallet provided')
+          },
+        })
+      },
       withSmartWallet<SW extends SnowballSmartWallet>(
         makeSmartWallet: (
           chain: SnowballChain,
@@ -52,13 +66,7 @@ export class Snowball<
   }
 
   constructor(private opts: SnowballOptions<Auth, SmartWallet>) {
-    const chain = this.opts.chain
-
-    this.chainEntries.set(chain.chainId, {
-      auth: this.opts.makeAuth(chain),
-      chain,
-    })
-    this.currentChainId = chain.chainId
+    this.switchChain(this.opts.chain)
   }
 
   get chain() {
@@ -79,14 +87,14 @@ export class Snowball<
       return
     }
     try {
-      this.chainEntries.set(chain.chainId, {
-        auth: this.opts.makeAuth(chain),
-        chain,
-      })
+      const auth = this.opts.makeAuth(chain)
+      auth.onStateChange = () => this.pubsub.publish()
+
+      this.chainEntries.set(chain.chainId, { auth, chain })
       this.currentChainId = chain.chainId
-      await this.getSmartWallet()
+      // await this.getSmartWallet()
     } catch (error) {
-      return Promise.reject(`changeChain failed ${error}`)
+      return Promise.reject(SnowballError.make('chain.switch', 'Error switching chain', error))
     }
   }
 
@@ -103,5 +111,9 @@ export class Snowball<
 
   async getSmartWalletAddress(): Promise<Address> {
     return (await this.getSmartWallet()).getAddress()
+  }
+
+  subscribe(callback: () => void) {
+    return this.pubsub.subscribe(callback)
   }
 }

@@ -260,8 +260,8 @@ export class SnowballChain {
     const chain = SnowballChain.toViemMap.get(this.chainId)
     if (!chain) {
       throw new SnowballError(
+        'unsupported.chain',
         `Unsupported chain: ${this.name} (${this.chainId})`,
-        'UNSUPPORTED_VIEM_CHAIN',
       )
     }
     return chain
@@ -271,8 +271,8 @@ export class SnowballChain {
     const network = SnowballChain.toAlchemyNetworkMap.get(this.chainId)
     if (!network) {
       throw new SnowballError(
+        'unsupported.network',
         `Unsupported chain: ${this.name} (${this.chainId})`,
-        'UNSUPPORTED_ALCHEMY_NETWORK',
       )
     }
     return network
