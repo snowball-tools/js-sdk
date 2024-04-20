@@ -10,38 +10,59 @@ import { AuthMethod, IRelayPKP, SessionSigsMap } from '@lit-protocol/types'
 
 import { getSessionSigs } from './helpers'
 
+const ONE_DAY_SECONDS = 60 * 60 * 24
+
+type SessionSigsRecord = {
+  version: number
+  expiresAt: number
+  sessionSigs: SessionSigsMap
+}
+const RECORD_VERSION = 1
+
 export type LitAuthState = AuthStateLoadingAttrs &
   (
     | { name: 'init' }
     | { name: 'authenticated'; authMethod: AuthMethod; pkps: IRelayPKP[] }
     | {
         name: 'wallet-ready'
-        authMethod: AuthMethod
-        pkps: IRelayPKP[]
+        /** Only present after a fresh signin */
+        authMethod?: AuthMethod
+        /** Can only be present if `authMethod` is present */
+        pkps?: IRelayPKP[]
         pkpWallet: PKPEthersWallet
       }
   )
 
-export type ConfigOptions = {
+export type LitConfigOptions = {
   litRpcUrl?: string
   litNetwork?: string
-  litReplayApiKey: string
+  litRelayApiKey: string
+  sessionExpirationInSeconds?: number
 }
 
 export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitAuthState> {
-  override _state: LitAuthState = { name: 'init' }
+  override get state() {
+    return this._state as LitAuthState
+  }
 
   protected litRpcUrl?: string
   protected litNodeClient: LitNodeClient
   protected litAuthClient: LitAuthClient
-  protected sessionSigs: SessionSigsMap | undefined
+  protected sessionExpSeconds: number
+  protected sessionSigsRecord: SessionSigsRecord | undefined
 
   protected abstract _getProvider(): BaseProvider
 
-  constructor(opts: ConfigOptions & { chain: SnowballChain }) {
+  constructor(opts: LitConfigOptions & { chain: SnowballChain }) {
     super(opts.chain)
 
-    if (!opts.litReplayApiKey) {
+    this.log('init')
+
+    this.sessionExpSeconds = opts.sessionExpirationInSeconds || ONE_DAY_SECONDS
+
+    this._state = { name: 'init' }
+
+    if (!opts.litRelayApiKey) {
       throw new SnowballError(
         'missing.litReplayApiKey',
         `[${this.constructor.name}] Missing litReplayApiKey`,
@@ -58,15 +79,17 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     this.litAuthClient = new LitAuthClient({
       rpcUrl: this.litRpcUrl,
       litRelayConfig: {
-        relayApiKey: opts.litReplayApiKey,
+        relayApiKey: opts.litRelayApiKey,
       },
       litNodeClient: this.litNodeClient,
     })
+
+    this._loadSessionSigs()
   }
 
   async getEthersWallet() {
-    if (this._state.name === 'wallet-ready') {
-      return this._state.pkpWallet
+    if (this.state.name === 'wallet-ready') {
+      return this.state.pkpWallet
     }
 
     const makeError = SnowballError.builder(
@@ -74,22 +97,30 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
       'Error getting Ethers wallet',
     )
 
-    if (this._state.name !== 'authenticated') {
+    if (this.state.name !== 'authenticated') {
       return this.setError(makeError(0, 'Not authenticated'))
     }
 
-    const pkpPubKey = this._state.pkps[0]?.publicKey
+    const pkpPubKey = this.state.pkps[0]?.publicKey
     if (!pkpPubKey) {
       return this.setError(makeError(1, 'No PKPs found'))
     }
 
     try {
-      this.sessionSigs = await getSessionSigs({
-        auth: this._state.authMethod,
-        chain: this.chain,
-        provider: this._getProvider(),
-        pkpPublicKey: pkpPubKey,
-      })
+      const expireDate = new Date(Date.now() + 1000 * this.sessionExpSeconds)
+
+      this.sessionSigsRecord = {
+        version: RECORD_VERSION,
+        expiresAt: expireDate.getTime(),
+        sessionSigs: await getSessionSigs({
+          auth: this.state.authMethod,
+          chain: this.chain,
+          provider: this._getProvider(),
+          pkpPublicKey: pkpPubKey,
+          expiration: expireDate.toISOString(),
+        }),
+      }
+      this._saveSessionSigs()
     } catch (err) {
       return this.setError(makeError(2, err))
     }
@@ -97,7 +128,7 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     try {
       this.setLoading('createWallet', 'Creating Ethers wallet')
       var wallet = new PKPEthersWallet({
-        controllerSessionSigs: this.sessionSigs,
+        controllerSessionSigs: this.sessionSigsRecord.sessionSigs,
         pkpPubKey,
         rpc: 'https://rpc.cayenne.litprotocol.com',
       })
@@ -108,8 +139,8 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
     this.setState({
       name: 'wallet-ready',
-      authMethod: this._state.authMethod,
-      pkps: this._state.pkps,
+      authMethod: this.state.authMethod,
+      pkps: this.state.pkps,
       pkpWallet: wallet,
     })
 
@@ -125,5 +156,55 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
   reset() {
     this.setState({ name: 'init' })
+  }
+
+  getSessionExpirationTime() {
+    return this.sessionSigsRecord?.expiresAt || 0
+  }
+
+  private _loadSessionSigs() {
+    // Attempt to load a previous session
+    if (!globalThis.localStorage) {
+      this.log('localStorage not available')
+      return
+    }
+    try {
+      const record: SessionSigsRecord = JSON.parse(
+        localStorage.getItem(`${this.className}:sessionSigs`) || 'null',
+      )
+      if (!record) {
+        this.log('No session found')
+        return
+      }
+
+      let softError = ''
+      if (record.version !== RECORD_VERSION) {
+        softError = 'Session version mismatch'
+      } else if (record.expiresAt > Date.now()) {
+        this.sessionSigsRecord = record
+      } else {
+        softError = 'Session expired'
+      }
+
+      if (softError) {
+        this.log(softError, record)
+        localStorage.removeItem(`${this.className}:sessionSigs`)
+      } else {
+        this.log('Loaded session', record.expiresAt)
+      }
+    } catch (err) {
+      console.error(`[${this.className}] Error loading session:`, err)
+      localStorage.removeItem(`${this.className}:sessionSigs`)
+    }
+  }
+
+  private _saveSessionSigs() {
+    if (!globalThis.localStorage || !this.sessionSigsRecord) return
+    try {
+      localStorage.setItem(`${this.className}:sessionSigs`, JSON.stringify(this.sessionSigsRecord))
+      this.log('Saved session', this.sessionSigsRecord.expiresAt)
+    } catch (err) {
+      console.error(`[${this.className}] Error saving session:`, err)
+    }
   }
 }

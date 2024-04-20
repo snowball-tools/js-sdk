@@ -7,26 +7,29 @@ import { makePubSub } from './pubsub'
 
 type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
 
-export type SnowballOptions<
-  Auth extends SnowballAuth<any, any>,
-  SmartWallet extends SnowballSmartWallet,
-> = {
+export type SnowballOptions<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> = {
   // apiKey: string // TODO
   chain: SnowballChain
-  makeAuth: (chain: SnowballChain) => Auth
+  makeAuth: MakeAuthMap<Auths>
   makeSmartWallet: (
     chain: SnowballChain,
-    wallet: Ret<Auth['getEthersWallet']>,
+    wallet: Ret<Auths[keyof Auths]['getEthersWallet']>,
   ) => SmartWallet | Promise<SmartWallet>
 }
 
-export class Snowball<
-  Auth extends SnowballAuth<any, any>,
-  SmartWallet extends SnowballSmartWallet,
-> {
+export type SnowballInitStatus =
+  | { name: 'loading' }
+  | { name: 'error'; error: Error }
+  | { name: 'ready' }
+
+type AuthTypes = Record<string, SnowballAuth<any, any>>
+
+type MakeAuthMap<T extends AuthTypes> = { [K in keyof T]: (chain: SnowballChain) => T[K] }
+
+export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> {
   private chainEntries = new Map<
     number,
-    { chain: SnowballChain; auth: Auth; smartWallet?: SmartWallet }
+    { chain: SnowballChain; auths: Auths; smartWallets: Record<string, SmartWallet> }
   >()
   private currentChainId!: number
 
@@ -35,7 +38,7 @@ export class Snowball<
   static Chain = SnowballChain
 
   // Builder for type inference
-  static withAuth<A extends SnowballAuth<any, any>>(makeAuth: (chain: SnowballChain) => A) {
+  static withAuth<A extends AuthTypes>(makeAuth: MakeAuthMap<A>) {
     return {
       create(opts: { initialChain: SnowballChain }) {
         return new Snowball<A, never>({
@@ -49,7 +52,7 @@ export class Snowball<
       withSmartWallet<SW extends SnowballSmartWallet>(
         makeSmartWallet: (
           chain: SnowballChain,
-          wallet: Ret<A['getEthersWallet']>,
+          wallet: Ret<A[keyof A]['getEthersWallet']>,
         ) => Promise<SW> | SW,
       ) {
         return {
@@ -65,52 +68,82 @@ export class Snowball<
     }
   }
 
-  constructor(private opts: SnowballOptions<Auth, SmartWallet>) {
+  constructor(private opts: SnowballOptions<Auths, SmartWallet>) {
     this.switchChain(this.opts.chain)
   }
 
   get chain() {
-    return this.chainEntries.get(this.currentChainId)!.chain
+    return this._getCurrentChainEntry().chain
   }
 
   get auth() {
-    return this.chainEntries.get(this.currentChainId)!.auth
+    return this._getCurrentChainEntry().auths
   }
 
   get smartWallet() {
-    return this.chainEntries.get(this.currentChainId)!.smartWallet
+    return this._getCurrentChainEntry().smartWallets
   }
 
-  async switchChain(chain: SnowballChain) {
+  private _getCurrentChainEntry() {
+    const entry = this.chainEntries.get(this.currentChainId)
+    if (!entry) {
+      throw new SnowballError(
+        'missing.chain',
+        'Chain not initialized (did Snowball.withAuth() throw an error?)',
+      )
+    }
+    return entry
+  }
+
+  /**
+   * Returns an auth with an active session.
+   *
+   * If multiple auths have active sessions, the one with the most distance expiration time is returned.
+   */
+  get session(): Auths[keyof Auths] | null {
+    const validSessions = ([...Object.values(this.auth)] as any as SnowballAuth<unknown>[])
+      .filter((auth) => auth.getSessionExpirationTime())
+      .sort((a, b) => {
+        // Sort from most distance expiration time to least
+        return b.getSessionExpirationTime() - a.getSessionExpirationTime()
+      })
+    return (validSessions[0] as Auths[keyof Auths]) || null
+  }
+
+  switchChain(chain: SnowballChain) {
     if (this.chainEntries.has(chain.chainId)) {
       this.currentChainId = chain.chainId
       return
     }
     try {
-      const auth = this.opts.makeAuth(chain)
-      auth.onStateChange = () => this.pubsub.publish()
+      let auths: Auths = {} as Auths
+      for (let [authName, makeAuth] of Object.entries(this.opts.makeAuth)) {
+        const auth = makeAuth(chain)
+        auth.onStateChange = () => this.pubsub.publish()
+        auths[authName as keyof Auths] = auth
+      }
 
-      this.chainEntries.set(chain.chainId, { auth, chain })
+      this.chainEntries.set(chain.chainId, { auths, chain, smartWallets: {} })
       this.currentChainId = chain.chainId
-      // await this.getSmartWallet()
     } catch (error) {
       return Promise.reject(SnowballError.make('chain.switch', 'Error switching chain', error))
     }
   }
 
-  async getSmartWallet(): Promise<SmartWallet> {
-    const entry = this.chainEntries.get(this.currentChainId)!
-    if (!entry.smartWallet) {
-      entry.smartWallet = await this.opts.makeSmartWallet(
+  async getSmartWallet(authName: keyof Auths): Promise<SmartWallet> {
+    const entry = this._getCurrentChainEntry()
+    let wallet = entry.smartWallets[authName as string]
+    if (!wallet) {
+      wallet = entry.smartWallets[authName as string] = await this.opts.makeSmartWallet(
         entry.chain,
-        await this.auth.getEthersWallet(),
+        await entry.auths[authName]!.getEthersWallet(),
       )
     }
-    return entry.smartWallet
+    return wallet
   }
 
-  async getSmartWalletAddress(): Promise<Address> {
-    return (await this.getSmartWallet()).getAddress()
+  async getSmartWalletAddress(authName: keyof Auths): Promise<Address> {
+    return (await this.getSmartWallet(authName)).getAddress()
   }
 
   subscribe(callback: () => void) {

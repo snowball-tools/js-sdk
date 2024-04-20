@@ -5,30 +5,28 @@ import { ProviderType } from '@lit-protocol/constants'
 import { WebAuthnProvider } from '@lit-protocol/lit-auth-client'
 import type { IRelayPollStatusResponse } from '@lit-protocol/types'
 
-import { SnowballLitAuth } from './LitAuth'
+import { LitConfigOptions, SnowballLitAuth } from './LitAuth'
 
-type ConfigOptions = {
-  litReplayApiKey: string
-  litNetwork?: string
-}
+// TODO: https://web.dev/articles/webauthn-exclude-credentials
 
 export class LitPasskeyAuth extends SnowballLitAuth {
-  type = 'lit-passkey' as const
+  static className = 'LitPasskeyAuth' as const
+  override readonly className = 'LitPasskeyAuth' as const
 
   provider: WebAuthnProvider
 
-  static configure(opts: ConfigOptions) {
+  static configure(opts: LitConfigOptions) {
     return (chain: SnowballChain) => new this({ ...opts, chain })
   }
 
-  constructor(opts: ConfigOptions & { chain: SnowballChain }) {
+  constructor(opts: LitConfigOptions & { chain: SnowballChain }) {
     super(opts)
     this.provider = this.litAuthClient.initProvider(ProviderType.WebAuthn)
   }
 
   async register(username: string) {
-    if (this._state.name !== 'init') {
-      console.warn(`[Snowball] no-op: register() while in state '${this._state.name}'`)
+    if (this.state.name !== 'init') {
+      this.log(`no-op: register() while in state '${this.state.name}'`)
       return
     }
 
@@ -68,8 +66,8 @@ export class LitPasskeyAuth extends SnowballLitAuth {
   }
 
   async authenticate(): Promise<void> {
-    if (this._state.name !== 'init') {
-      console.warn(`[Snowball] no-op: authenticate() while in state '${this._state.name}'`)
+    if (this.state.name !== 'init') {
+      this.log(`no-op: authenticate() while in state '${this.state.name}'`)
       return
     }
     try {

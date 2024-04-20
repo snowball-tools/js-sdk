@@ -17,11 +17,13 @@
 		"@lit-protocol/pkp-ethers": "3.0.32",
 		"@lit-protocol/types": "3.0.32",
 		"@snowballtools/types": "*",
-		"@snowballtools/utils": "*"
+		"@snowballtools/utils": "*",
+		"debug": "*"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
-		"@internal/typescript-config": "*"
+		"@internal/typescript-config": "*",
+		"@types/debug": "^4.1.12"
 	},
 	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
 	"author": "Snowball Tools Inc.",
