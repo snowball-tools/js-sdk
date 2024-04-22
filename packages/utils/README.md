@@ -6,18 +6,20 @@ This package is responsible for handling snowballtools sdk utils
 
 ## Installation
 
-### NPM
-
 ```zsh
+# NPM
 npm install @snowballtools/utils
-```
 
-### Yarn
-
-```zsh
+# Yarn
 yarn add @snowballtools/utils
+
+# PNPM
+pnpm add @snowballtools/utils
+
+# Bun
+bun install @snowballtools/utils
 ```
 
-## Documentation
+## License
 
-- [TS SDK](https://sdk.snowballtools.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

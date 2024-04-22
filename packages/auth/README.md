@@ -6,24 +6,20 @@ This package is responsible for handling user authentication (who you are) and a
 
 ## Installation
 
-### NPM
-
 ```zsh
+# NPM
 npm install @snowballtools/auth
-```
 
-### Yarn
-
-```zsh
+# Yarn
 yarn add @snowballtools/auth
+
+# PNPM
+pnpm add @snowballtools/auth
+
+# Bun
+bun install @snowballtools/auth
 ```
 
-## Usage
+## License
 
-```typescript
-import { Auth } from '@snowballtools/auth';
-```
-
-## Documentation
-
-- [TS SDK](https://sdk.snowballtools.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)

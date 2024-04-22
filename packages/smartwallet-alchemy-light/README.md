@@ -1,4 +1,4 @@
-[text](../utils/LICENSE.md)# @snowballtools/smartwallet-alchemy
+# @snowballtools/smartwallet-alchemy
 
 ## Description
 
@@ -10,24 +10,20 @@ This package is responsible for handling Smart Wallets ([ERC-4337](https://eips.
 
 ## Installation
 
-### NPM
-
 ```zsh
+# NPM
 npm install @snowballtools/smartwallet-alchemy
-```
 
-### Yarn
-
-```zsh
+# Yarn
 yarn add @snowballtools/smartwallet-alchemy
+
+# PNPM
+pnpm add @snowballtools/smartwallet-alchemy
+
+# Bun
+bun install @snowballtools/smartwallet-alchemy
 ```
 
-## Usage
+## License
 
-```typescript
-import { SmartWallet } from '@snowballtools/smartwallet-alchemy'
-```
-
-## Documentation
-
-- [TS SDK](https://sdk.snowballtools.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
