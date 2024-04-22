@@ -1,13 +1,14 @@
-# Turborepo starter
+# Snowball JS-SDK
 
 ## Requirements
 
-- Node.js 18.16.0+
+- Node.js `18.16.0+`
 
 ## Development
 
-```
+```zsh
 # Getting started
+git submodule update --init
 npm install
 
 # Developing
