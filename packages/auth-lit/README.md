@@ -10,24 +10,20 @@ This package is responsible for handling snowballtool sdk auth lit
 
 ## Installation
 
-### NPM
-
 ```zsh
+# NPM
 npm install @snowballtools/auth-lit
-```
 
-### Yarn
-
-```zsh
+# Yarn
 yarn add @snowballtools/auth-lit
+
+# PNPM
+pnpm add @snowballtools/auth-lit
+
+# Bun
+bun install @snowballtools/auth-lit
 ```
 
-## Usage
+## License
 
-```typescript
-import { LitPasskey } from '@snowballtools/auth-lit';
-```
-
-## Documentation
-
-- [TS SDK](https://sdk.snowballtools.xyz)
+[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
