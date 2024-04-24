@@ -1,6 +1,6 @@
 {
   "name": "@snowballtools/types",
-  "version": "0.0.1",
+  "version": "0.1.1",
   "author": "Snowball Tools Inc.",
   "repository": "https://github.com/snowball-tools/snowball-ts-sdk",
   "main": "./dist/index.js",

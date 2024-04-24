@@ -1,6 +1,6 @@
 {
 	"name": "@snowballtools/smartwallet-alchemy-light",
-	"version": "0.0.1",
+	"version": "0.1.1",
 	"description": "aa",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
