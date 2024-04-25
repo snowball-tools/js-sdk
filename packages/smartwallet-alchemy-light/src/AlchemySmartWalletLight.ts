@@ -47,9 +47,7 @@ export class AlchemySmartWalletLight {
   }
 
   /** Convenience helper. For full configuration, use .client.sendUserOperation() */
-  async sendUserOp(
-    uo: SendUserOperationParameters<SmartContractAccount | undefined>['uo'],
-  ): Promise<{ hash: string }> {
+  async sendUserOp(uo: SendUserOperationParameters<SmartContractAccount | undefined>['uo']) {
     // TODO: Types are requiring an account field, but runtime does not
     //@ts-ignore
     const response = await this.client.sendUserOperation({
