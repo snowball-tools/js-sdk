@@ -7,27 +7,27 @@ export class SnowballError extends Error {
   protected _errorKey = 'SnowballError'
 
   static builder(name: string, message: string) {
-    return (index: number, details: any) => {
-      return SnowballError.make(`${name}.${index}`, message, details)
+    return (index: number, cause: any) => {
+      return SnowballError.make(`${name}.${index}`, message, cause)
     }
   }
 
-  static make(name: string, message: string, details: any) {
-    if (details._errorKey === 'SnowballError' && details instanceof Error) {
+  static make(name: string, message: string, cause: unknown | string | Error) {
+    if ((cause as any)._errorKey === 'SnowballError' && cause instanceof Error) {
       // Outer to inner
-      details.name = `${name}.${details.name}`
+      cause.name = `${name}.${cause.name}`
       // Inner to outer
-      details.message = `[Snowball]${message[0] === '[' ? '' : ' '}${message}: ${details.message.replace(/^\[Snowball\]/, '')}`
-      return details as SnowballError
+      cause.message = `[Snowball]${message[0] === '[' ? '' : ' '}${message}: ${cause.message.replace(/^\[Snowball\]/, '')}`
+      return cause as SnowballError
     }
-    return new SnowballError(name, message, details)
+    return new SnowballError(name, message, typeof cause === 'string' ? new Error(cause) : cause)
   }
 
   constructor(
     public name: string,
     message: string,
-    public details?: any,
+    cause?: any,
   ) {
-    super(`[Snowball]${message[0] === '[' ? '' : ' '}${message}`)
+    super(`[Snowball]${message[0] === '[' ? '' : ' '}${message}`, { cause })
   }
 }
