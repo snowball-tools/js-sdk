@@ -3,12 +3,12 @@ import { SnowballError } from '@snowballtools/types'
 import { Address } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
-import { BaseProvider, LitAuthClient } from '@lit-protocol/lit-auth-client'
 import { LitNodeClient } from '@lit-protocol/lit-node-client'
 import { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
-import { AuthMethod, IRelayPKP, SessionSigsMap } from '@lit-protocol/types'
+import { AuthMethod, IRelayPKP, LIT_NETWORKS_KEYS, SessionSigsMap } from '@lit-protocol/types'
 
 import { getSessionSigs } from './helpers'
+import { BaseProvider, LitAuthClient } from './lit-auth-client'
 
 const ONE_DAY_SECONDS = 60 * 60 * 24
 
@@ -35,7 +35,7 @@ export type LitAuthState = AuthStateLoadingAttrs &
 
 export type LitConfigOptions = {
   litRpcUrl?: string
-  litNetwork?: string
+  litNetwork?: LIT_NETWORKS_KEYS
   litRelayApiKey: string
   sessionExpirationInSeconds?: number
 }
@@ -46,6 +46,7 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
   }
 
   protected litRpcUrl?: string
+  protected litNetwork: LIT_NETWORKS_KEYS
   protected litNodeClient: LitNodeClient
   protected litAuthClient: LitAuthClient
   protected sessionExpSeconds: number
@@ -69,10 +70,11 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
       )
     }
 
-    this.litRpcUrl = opts.litRpcUrl
+    this.litNetwork = opts.litNetwork || 'cayenne'
+    this.litRpcUrl = opts.litRpcUrl || `https://rpc.${this.litNetwork}.litprotocol.com`
 
     this.litNodeClient = new LitNodeClient({
-      litNetwork: opts.litNetwork || 'cayenne',
+      litNetwork: this.litNetwork,
       debug: true,
     })
 
@@ -118,6 +120,7 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
           provider: this._getProvider(),
           pkpPublicKey: pkpPubKey,
           expiration: expireDate.toISOString(),
+          litNodeClient: this.litNodeClient,
         }),
       }
       this._saveSessionSigs()
@@ -130,7 +133,9 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
       var wallet = new PKPEthersWallet({
         controllerSessionSigs: this.sessionSigsRecord.sessionSigs,
         pkpPubKey,
-        rpc: 'https://rpc.cayenne.litprotocol.com',
+        litNodeClient: this.litNodeClient,
+        // rpc: 'https://rpc.cayenne.litprotocol.com',
+        // rpc: this.litRpcUrl,
       })
       await wallet.init()
     } catch (error) {

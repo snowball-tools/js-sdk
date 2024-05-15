@@ -2,10 +2,10 @@ import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
 import { ProviderType } from '@lit-protocol/constants'
-import { WebAuthnProvider } from '@lit-protocol/lit-auth-client'
 import type { IRelayPollStatusResponse } from '@lit-protocol/types'
 
 import { LitConfigOptions, SnowballLitAuth } from './LitAuth'
+import { WebAuthnProvider } from './lit-auth-client'
 
 // TODO: https://web.dev/articles/webauthn-exclude-credentials
 

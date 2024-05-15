@@ -5,6 +5,7 @@
   "compilerOptions": {
     "module": "esnext",
     "moduleResolution": "bundler",
+    "outDir": "dist",
     "paths": {
       "@snowballtools/*": [
         "../../packages/*/src/index.ts"

@@ -13,6 +13,14 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
+    "@rollup/plugin-alias": "^5.1.0",
+    "@rollup/plugin-commonjs": "^25.0.7",
+    "@rollup/plugin-inject": "^5.0.5",
+    "@rollup/plugin-json": "^6.1.0",
+    "@rollup/plugin-node-resolve": "^15.2.3",
+    "@rollup/plugin-replace": "^5.0.5",
+    "@rollup/plugin-sucrase": "^5.0.2",
+    "rollup": "^4.17.2",
     "tsup": "^8.0.2"
   }
 }

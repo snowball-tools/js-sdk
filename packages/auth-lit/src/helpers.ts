@@ -1,10 +1,11 @@
-import { SnowballError } from '@snowballtools/types'
 import { DEFAULT_EXP, SnowballChain } from '@snowballtools/utils'
 
-import { LitAbility, LitActionResource } from '@lit-protocol/auth-helpers'
+import { LitAbility, LitPKPResource } from '@lit-protocol/auth-helpers'
 import { AuthMethodScope } from '@lit-protocol/constants'
-import { BaseProvider } from '@lit-protocol/lit-auth-client'
+import { LitNodeClient } from '@lit-protocol/lit-node-client'
 import { AuthMethod, IRelayPKP, SessionSigsMap } from '@lit-protocol/types'
+
+import { BaseProvider } from './lit-auth-client'
 
 export async function getPKPs(
   provider: BaseProvider,
@@ -54,6 +55,7 @@ export async function getSessionSigs({
   pkpPublicKey,
   expiration = DEFAULT_EXP,
   switchChain = false,
+  litNodeClient,
 }: {
   auth: AuthMethod
   chain: SnowballChain
@@ -61,20 +63,48 @@ export async function getSessionSigs({
   expiration?: string
   pkpPublicKey: string
   switchChain?: boolean
+  litNodeClient: LitNodeClient
 }): Promise<SessionSigsMap> {
-  return await provider.getSessionSigs({
+  // return await provider.getSessionSigs({
+  //   pkpPublicKey,
+  //   authMethod: auth,
+  //   sessionSigsParams: {
+  //     chain: chain.name.toLowerCase(),
+  //     expiration,
+  //     switchChain,
+  //     resourceAbilityRequests: [
+  //       {
+  //         resource: new LitActionResource('*'),
+  //         ability: LitAbility.PKPSigning,
+  //       },
+  //     ],
+
+  //     // Types now require this in v6
+  //     async authNeededCallback(params) {
+  //       const response = await litNodeClient.signSessionKey({
+  //         statement: params.statement,
+  //         authMethods: [auth],
+  //         pkpPublicKey: pkpPublicKey,
+  //         expiration: params.expiration,
+  //         resources: params.resources,
+  //         chainId: 1,
+  //       })
+  //       return response.authSig
+  //     },
+  //   },
+  // })
+  await litNodeClient.getLatestBlockhash()
+  return await litNodeClient.getPkpSessionSigs({
     pkpPublicKey,
-    authMethod: auth,
-    sessionSigsParams: {
-      chain: chain.name.toLowerCase(),
-      expiration,
-      switchChain,
-      resourceAbilityRequests: [
-        {
-          resource: new LitActionResource('*'),
-          ability: LitAbility.PKPSigning,
-        },
-      ],
-    },
+    expiration,
+    chain: chain.name.toLowerCase(),
+    switchChain,
+    authMethods: [auth],
+    resourceAbilityRequests: [
+      {
+        resource: new LitPKPResource('*'),
+        ability: LitAbility.PKPSigning,
+      },
+    ],
   })
 }

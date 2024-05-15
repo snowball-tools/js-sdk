@@ -27,6 +27,7 @@
   ],
   "dependencies": {
     "@changesets/cli": "^2.27.1",
+    "@spruceid/siwe-parser": "^2.1.2",
     "patch-package": "^8.0.0"
   }
 }

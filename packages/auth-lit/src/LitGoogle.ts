@@ -2,11 +2,12 @@ import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
 import { ProviderType } from '@lit-protocol/constants'
-import { GoogleProvider, getProviderFromUrl, isSignInRedirect } from '@lit-protocol/lit-auth-client'
+import GoogleProvider from '@lit-protocol/lit-auth-client/src/lib/providers/GoogleProvider'
 
 import { LitConfigOptions } from './LitAuth'
 import { LitOAuth } from './LitOAuth'
 import { clearRedirectUrlParams, mintPKP } from './helpers'
+import { getProviderFromUrl, isSignInRedirect } from './lit-auth-client'
 
 export class LitGoogleAuth extends LitOAuth {
   static className = 'LitGoogleAuth' as const

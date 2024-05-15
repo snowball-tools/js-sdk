@@ -51,6 +51,7 @@ esbuild.build({
   format: 'esm',
   define: {
     'process.env.NODE_ENV': '"production"',
+    'global': 'globalThis',
   },
   external: exclusions, // Use exclusions for the external option
   plugins: [aliasPlugin], // Use the alias plugin

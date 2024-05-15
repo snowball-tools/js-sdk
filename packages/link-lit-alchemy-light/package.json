@@ -16,7 +16,7 @@
 	"dependencies": {
 		"@alchemy/aa-alchemy": "^3.6.1",
 		"@alchemy/aa-core": "^3.6.1",
-		"@lit-protocol/pkp-ethers": "3.0.32",
+		"@lit-protocol/pkp-ethers": "6.0.0-beta.2",
 		"@snowballtools/smartwallet-alchemy-light": "*",
 		"@snowballtools/types": "*",
 		"@snowballtools/utils": "*",
