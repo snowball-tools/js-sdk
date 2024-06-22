@@ -1,0 +1,63 @@
+diff --git a/node_modules/@turnkey/http/dist/index.d.ts b/node_modules/@turnkey/http/dist/index.d.ts
+index 6014c8e..ac520ae 100644
+--- a/node_modules/@turnkey/http/dist/index.d.ts
++++ b/node_modules/@turnkey/http/dist/index.d.ts
+@@ -1,18 +1,19 @@
+-import { PublicApiService as TurnkeyApi } from "./__generated__/barrel";
+-export type { definitions as TurnkeyApiTypes } from "./__generated__/services/coordinator/public/v1/public_api.types";
+-export { TurnkeyClient } from "./__generated__/services/coordinator/public/v1/public_api.client";
+-export { init, browserInit } from "./config";
+-export { TurnkeyRequestError } from "./base";
+-export { TurnkeyActivityError } from "./shared";
+-export type { SignedRequest, TSignedRequest } from "./base";
+-export { getWebAuthnAttestation } from "./webauthn";
+-export { withAsyncPolling, createActivityPoller } from "./async";
+-export { TurnkeyApi };
++import { PublicApiService as TurnkeyApi } from './__generated__/barrel'
++
++export type { definitions as TurnkeyApiTypes } from './__generated__/services/coordinator/public/v1/public_api.types'
++export { TurnkeyClient } from './__generated__/services/coordinator/public/v1/public_api.client'
++export { init, browserInit } from './config'
++export { TurnkeyRequestError } from './base'
++export { TurnkeyActivityError } from './shared'
++export type { SignedRequest, TSignedRequest } from './base'
++export { getWebAuthnAttestation, getWebAuthnAssertion } from './webauthn'
++export { withAsyncPolling, createActivityPoller } from './async'
++export { TurnkeyApi }
+ /**
+  * @deprecated use `TurnkeyApi` instead
+  */
+-declare const PublicApiService: typeof TurnkeyApi;
+-export { PublicApiService };
+-export { sealAndStampRequestBody } from "./base";
+-export { VERSION } from "./version";
++declare const PublicApiService: typeof TurnkeyApi
++export { PublicApiService }
++export { sealAndStampRequestBody } from './base'
++export { VERSION } from './version'
+ //# sourceMappingURL=index.d.ts.map
+diff --git a/node_modules/@turnkey/http/dist/index.js b/node_modules/@turnkey/http/dist/index.js
+index 118819e..e849791 100644
+--- a/node_modules/@turnkey/http/dist/index.js
++++ b/node_modules/@turnkey/http/dist/index.js
+@@ -22,6 +22,7 @@ exports.TurnkeyRequestError = base.TurnkeyRequestError;
+ exports.sealAndStampRequestBody = base.sealAndStampRequestBody;
+ exports.TurnkeyActivityError = shared.TurnkeyActivityError;
+ exports.getWebAuthnAttestation = webauthn.getWebAuthnAttestation;
++exports.getWebAuthnAssertion = webauthn.getWebAuthnAssertion;
+ exports.createActivityPoller = async.createActivityPoller;
+ exports.withAsyncPolling = async.withAsyncPolling;
+ exports.VERSION = version.VERSION;
+diff --git a/node_modules/@turnkey/http/dist/index.mjs b/node_modules/@turnkey/http/dist/index.mjs
+index b2320c4..8888c94 100644
+--- a/node_modules/@turnkey/http/dist/index.mjs
++++ b/node_modules/@turnkey/http/dist/index.mjs
+@@ -3,7 +3,7 @@ export { TurnkeyClient } from './__generated__/services/coordinator/public/v1/pu
+ export { browserInit, init } from './config.mjs';
+ export { TurnkeyRequestError, sealAndStampRequestBody } from './base.mjs';
+ export { TurnkeyActivityError } from './shared.mjs';
+-export { getWebAuthnAttestation } from './webauthn.mjs';
++export { getWebAuthnAttestation, getWebAuthnAssertion } from './webauthn.mjs';
+ export { createActivityPoller, withAsyncPolling } from './async.mjs';
+ export { VERSION } from './version.mjs';
+ 

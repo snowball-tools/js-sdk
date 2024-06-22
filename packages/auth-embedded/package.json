@@ -1,27 +1,26 @@
 {
-	"name": "@snowballtools/link-lit-alchemy-light",
+	"name": "@snowballtools/auth-embedded",
 	"version": "0.2.0",
-	"description": "aa",
+	"description": "snowballtools auth-passkey",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
+	"browser": {
+		"./dist/index.mjs": "./dist/index.browser.mjs"
+	},
 	"types": "./dist/index.d.ts",
 	"files": [
 		"dist/**/*",
 		"src/**/*"
 	],
 	"scripts": {
-		"build": "snowball-build-ts src/index.ts",
+		"build": "snowball-build-ts src/index.ts && snowball-build-for-browser src/index.ts",
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
-		"@alchemy/aa-alchemy": "^3.6.1",
-		"@alchemy/aa-core": "^3.6.1",
-		"@lit-protocol/pkp-ethers": "6.0.0-beta.3",
-		"@snowballtools/smartwallet-alchemy-light": "*",
+		"@snowballtools/auth": "*",
 		"@snowballtools/types": "*",
-		"@snowballtools/utils": "*",
-		"ethers": "^6.11.1",
-		"viem": "2.x"
+		"@snowballtools/js-sdk": "*",
+		"@turnkey/sdk-browser": "^0.4.1"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
@@ -31,7 +30,6 @@
 	"author": "Snowball Tools Inc.",
 	"license": "MIT",
 	"keywords": [
-		"smartwallet",
-		"aa"
+		"passkeys"
 	]
 }

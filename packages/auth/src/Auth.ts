@@ -1,5 +1,5 @@
-import { SnowballError } from '@snowballtools/types'
-import { Address } from '@snowballtools/types'
+import { ErrResult, err } from '@snowballtools/types'
+import { Address, ApiClient, SnowballError } from '@snowballtools/types'
 import type { SnowballChain } from '@snowballtools/utils'
 
 import debug from 'debug'
@@ -8,7 +8,7 @@ export type AuthStateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
   loading?: { code: string; message: string }
   /** Error details for attempting to transition from this state to the next one. */
-  error?: SnowballError
+  error?: ErrResult<any, any>
 }
 
 export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAttrs = {}> {
@@ -18,13 +18,22 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
   protected _state = {}
   onStateChange?: (state: State) => void
 
-  constructor(protected _chain: SnowballChain) {
+  constructor(
+    protected _rpcClient: ApiClient,
+    protected _chain: SnowballChain,
+  ) {
     // Hack to initialize this.className before anything else
     ;(this as any).className = (this.constructor as any).className
   }
 
-  abstract getEthersWallet(): Promise<Wallet>
-  abstract getEthersWalletAddress(): Promise<Address>
+  abstract getWallet(): Promise<Wallet | null>
+  abstract getWalletAddresses(): Promise<Address[]>
+
+  async getWalletAddress(): Promise<Address | null> {
+    return (await this.getWalletAddresses())[0] || null
+  }
+
+  abstract get wallet(): Wallet | null
 
   /**
    * Returns the expiration time of the current session in seconds.
@@ -58,10 +67,17 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
     this.setState({ ...this._state, loading: undefined } as State)
   }
 
-  protected setError(error: SnowballError) {
+  protected setError(cause: SnowballError) {
+    const error = err(cause.name, 'e-Auth.setError', { meta: { cause } })
     this.log(error)
     this.setState({ ...this._state, error, loading: undefined } as State)
     return Promise.reject(error)
+  }
+
+  protected setErr<T extends ErrResult<any, any>>(error: T) {
+    this.log(error)
+    this.setState({ ...this._state, error: error as any, loading: undefined } as State)
+    return error
   }
 
   protected clearError() {

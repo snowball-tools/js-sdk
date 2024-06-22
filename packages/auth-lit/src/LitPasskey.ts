@@ -4,6 +4,7 @@ import { SnowballChain } from '@snowballtools/utils'
 import { ProviderType } from '@lit-protocol/constants'
 import type { IRelayPollStatusResponse } from '@lit-protocol/types'
 
+import { MakeAuthOptions } from '../../js-sdk/src'
 import { LitConfigOptions, SnowballLitAuth } from './LitAuth'
 import { WebAuthnProvider } from './lit-auth-client'
 
@@ -16,10 +17,10 @@ export class LitPasskeyAuth extends SnowballLitAuth {
   provider: WebAuthnProvider
 
   static configure(opts: LitConfigOptions) {
-    return (chain: SnowballChain) => new this({ ...opts, chain })
+    return (makeOpts: MakeAuthOptions) => new this({ ...opts, ...makeOpts })
   }
 
-  constructor(opts: LitConfigOptions & { chain: SnowballChain }) {
+  constructor(opts: LitConfigOptions & MakeAuthOptions) {
     super(opts)
     this.provider = this.litAuthClient.initProvider(ProviderType.WebAuthn)
   }

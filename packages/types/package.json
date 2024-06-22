@@ -1,28 +1,44 @@
 {
   "name": "@snowballtools/types",
-  "version": "0.1.1",
+  "version": "0.2.0",
   "author": "Snowball Tools Inc.",
   "repository": "https://github.com/snowball-tools/snowball-ts-sdk",
-  "main": "./dist/index.js",
-  "module": "./dist/index.mjs",
   "devDependencies": {
     "@internal/snowball-build-ts": "*",
     "@internal/test-runner": "*",
     "@internal/typescript-config": "*"
   },
   "description": "snowballtools types",
-  "files": [
-    "dist/**/*",
-    "src/**/*"
-  ],
   "keywords": [
     "types"
   ],
   "license": "MIT",
   "scripts": {
     "test": "run-tests",
-    "build": "snowball-build-ts src/index.ts",
-    "watch": "snowball-build-ts src/index.ts --watch"
+    "build": "snowball-build-ts src/index.ts src/api.ts src/result.ts",
+    "watch": "snowball-build-ts src/*.ts --watch"
   },
-  "types": "./dist/index.d.ts"
+  "type": "module",
+  "files": [
+    "dist/**/*",
+    "src/**/*"
+  ],
+  "main": "./dist/index.js",
+  "exports": {
+    ".": {
+      "import": "./dist/index.js",
+      "require": "./dist/index.cjs",
+      "types": "./dist/index.d.ts"
+    },
+    "./api": {
+      "import": "./dist/api.js",
+      "require": "./dist/api.cjs",
+      "types": "./dist/api.d.ts"
+    },
+    "./result": {
+      "import": "./dist/result.js",
+      "require": "./dist/result.cjs",
+      "types": "./dist/result.d.ts"
+    }
+  }
 }

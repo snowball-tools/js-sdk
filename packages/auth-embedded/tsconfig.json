@@ -1,5 +1,5 @@
 {
 	"extends": "@internal/typescript-config/external-library.json",
-	"include": ["src/**/*", "../types/src/api.ts", "../types/src/result.ts"],
+	"include": ["src/**/*"],
 	"references": []
 }
