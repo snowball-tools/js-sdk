@@ -4,6 +4,7 @@ import { SnowballChain } from '@snowballtools/utils'
 import { ProviderType } from '@lit-protocol/constants'
 import GoogleProvider from '@lit-protocol/lit-auth-client/src/lib/providers/GoogleProvider'
 
+import { MakeAuthOptions } from '../../js-sdk/src'
 import { LitConfigOptions } from './LitAuth'
 import { LitOAuth } from './LitOAuth'
 import { clearRedirectUrlParams, mintPKP } from './helpers'
@@ -16,7 +17,7 @@ export class LitGoogleAuth extends LitOAuth {
   private _provider?: GoogleProvider
 
   static configure(opts: LitConfigOptions) {
-    return (chain: SnowballChain) => new this({ ...opts, chain })
+    return (makeOpts: MakeAuthOptions) => new this({ ...opts, ...makeOpts })
   }
 
   /**
@@ -44,7 +45,7 @@ export class LitGoogleAuth extends LitOAuth {
       // Not a google oauth redirect
       return false
     }
-    const makeError = SnowballError.builder('LitGoogle.getEthersWallet', 'Error handling redirect')
+    const makeError = SnowballError.builder('LitGoogle.getWallet', 'Error handling redirect')
 
     const provider = this.getProvider(redirectUri)
 

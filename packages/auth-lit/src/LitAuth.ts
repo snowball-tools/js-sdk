@@ -1,12 +1,12 @@
 import { AuthStateLoadingAttrs, SnowballAuth } from '@snowballtools/auth'
 import { SnowballError } from '@snowballtools/types'
 import { Address } from '@snowballtools/types'
-import { SnowballChain } from '@snowballtools/utils'
 
 import { LitNodeClient } from '@lit-protocol/lit-node-client'
 import { PKPEthersWallet } from '@lit-protocol/pkp-ethers'
 import { AuthMethod, IRelayPKP, LIT_NETWORKS_KEYS, SessionSigsMap } from '@lit-protocol/types'
 
+import { MakeAuthOptions } from '../../js-sdk/src'
 import { getSessionSigs } from './helpers'
 import { BaseProvider, LitAuthClient } from './lit-auth-client'
 
@@ -54,8 +54,8 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
   protected abstract _getProvider(): BaseProvider
 
-  constructor(opts: LitConfigOptions & { chain: SnowballChain }) {
-    super(opts.chain)
+  constructor(opts: LitConfigOptions & MakeAuthOptions) {
+    super(opts.rpcClient, opts.chain)
 
     this.log('init')
 
@@ -89,13 +89,13 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     this._loadSessionSigs()
   }
 
-  async getEthersWallet() {
-    if (this.state.name === 'wallet-ready') {
-      return this.state.pkpWallet
+  async getWallet() {
+    if (this.wallet) {
+      return this.wallet
     }
 
     const makeError = SnowballError.builder(
-      `${this.constructor.name}.getEthersWallet`,
+      `${this.constructor.name}.getWallet`,
       'Error getting Ethers wallet',
     )
 
@@ -154,9 +154,13 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     return wallet
   }
 
-  async getEthersWalletAddress() {
-    const wallet = await this.getEthersWallet()
-    return (await wallet.getAddress()) as Address
+  get wallet() {
+    return this.state.name === 'wallet-ready' ? this.state.pkpWallet : null
+  }
+
+  async getWalletAddresses() {
+    const wallet = await this.getWallet()
+    return [(await wallet.getAddress()) as Address]
   }
 
   reset() {

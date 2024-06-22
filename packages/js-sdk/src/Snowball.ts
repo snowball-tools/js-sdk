@@ -1,19 +1,22 @@
 import { SnowballAuth, SnowballSmartWallet } from '@snowballtools/auth'
 import { Address } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
+import { ApiClient } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
 import { makePubSub } from './pubsub'
+import { makeRpcClient } from './rpc-client'
 
 type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
 
 export type SnowballOptions<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> = {
-  // apiKey: string // TODO
   chain: SnowballChain
+  apiKey: string
+  apiUrl?: string
   makeAuth: MakeAuthMap<Auths>
   makeSmartWallet: (
     chain: SnowballChain,
-    wallet: Ret<Auths[keyof Auths]['getEthersWallet']>,
+    wallet: Ret<Auths[keyof Auths]['getWallet']>,
   ) => SmartWallet | Promise<SmartWallet>
 }
 
@@ -22,9 +25,20 @@ export type SnowballInitStatus =
   | { name: 'error'; error: Error }
   | { name: 'ready' }
 
+export type MakeAuthOptions = {
+  chain: SnowballChain
+  rpcClient: ApiClient
+}
+
 type AuthTypes = Record<string, SnowballAuth<any, any>>
 
-type MakeAuthMap<T extends AuthTypes> = { [K in keyof T]: (chain: SnowballChain) => T[K] }
+type MakeAuthMap<T extends AuthTypes> = { [K in keyof T]: (opts: MakeAuthOptions) => T[K] }
+
+type CreateOpts = {
+  apiKey: string
+  apiUrl?: string
+  initialChain: SnowballChain
+}
 
 export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> {
   private chainEntries = new Map<
@@ -35,14 +49,17 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
 
   private pubsub = makePubSub()
 
+  rpc: ApiClient
+
   static Chain = SnowballChain
 
   // Builder for type inference
   static withAuth<A extends AuthTypes>(makeAuth: MakeAuthMap<A>) {
     return {
-      create(opts: { initialChain: SnowballChain }) {
+      create({ initialChain, ...opts }: CreateOpts) {
         return new Snowball<A, never>({
-          chain: opts.initialChain,
+          ...opts,
+          chain: initialChain,
           makeAuth,
           makeSmartWallet: async () => {
             throw new SnowballError('missing.smartWallet', 'No SmartWallet provided')
@@ -52,13 +69,14 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
       withSmartWallet<SW extends SnowballSmartWallet>(
         makeSmartWallet: (
           chain: SnowballChain,
-          wallet: Ret<A[keyof A]['getEthersWallet']>,
+          wallet: Ret<A[keyof A]['getWallet']>,
         ) => Promise<SW> | SW,
       ) {
         return {
-          create(opts: { initialChain: SnowballChain }) {
+          create({ initialChain, ...opts }: CreateOpts) {
             return new Snowball<A, SW>({
-              chain: opts.initialChain,
+              ...opts,
+              chain: initialChain,
               makeAuth,
               makeSmartWallet,
             })
@@ -69,6 +87,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   }
 
   constructor(private opts: SnowballOptions<Auths, SmartWallet>) {
+    this.rpc = makeRpcClient(opts.apiKey, opts.apiUrl || 'https://api.snowball.build/v1')
     this.switchChain(this.opts.chain)
   }
 
@@ -117,8 +136,8 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
     }
     try {
       let auths: Auths = {} as Auths
-      for (let [authName, makeAuth] of Object.entries(this.opts.makeAuth)) {
-        const auth = makeAuth(chain)
+      for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
+        const auth = makeAuth({ chain, rpcClient: this.rpc })
         auth.onStateChange = () => this.pubsub.publish()
         auths[authName as keyof Auths] = auth
       }
@@ -136,7 +155,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
     if (!wallet) {
       wallet = entry.smartWallets[authName as string] = await this.opts.makeSmartWallet(
         entry.chain,
-        await entry.auths[authName]!.getEthersWallet(),
+        await entry.auths[authName]!.getWallet(),
       )
     }
     return wallet
@@ -150,3 +169,6 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
     return this.pubsub.subscribe(callback)
   }
 }
+
+// Fix type
+const objectEntries = Object.entries as <T>(obj: T) => [keyof T, T[keyof T]][]
