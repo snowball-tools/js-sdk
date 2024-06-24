@@ -1,5 +1,18 @@
 # @snowballtools/link-lit-alchemy-light
 
+## 0.3.0
+
+### Minor Changes
+
+- Publish Embedded Wallets
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/smartwallet-alchemy-light@0.3.0
+  - @snowballtools/types@0.3.0
+  - @snowballtools/utils@0.3.0
+
 ## 0.2.0
 
 ### Minor Changes

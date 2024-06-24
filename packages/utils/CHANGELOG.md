@@ -1,5 +1,16 @@
 # @snowballtools/utils
 
+## 0.3.0
+
+### Minor Changes
+
+- Publish Embedded Wallets
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/types@0.3.0
+
 ## 0.1.1
 
 ### Patch Changes
