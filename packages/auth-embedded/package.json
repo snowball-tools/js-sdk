@@ -18,9 +18,11 @@
 	},
 	"dependencies": {
 		"@snowballtools/auth": "*",
-		"@snowballtools/types": "*",
 		"@snowballtools/js-sdk": "*",
-		"@turnkey/sdk-browser": "^0.4.1"
+		"@snowballtools/types": "*",
+		"@turnkey/sdk-browser": "^0.4.1",
+		"@turnkey/viem": "^0.4.21",
+		"viem": "^2.16.2"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",

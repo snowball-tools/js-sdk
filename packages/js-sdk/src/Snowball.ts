@@ -32,7 +32,9 @@ export type MakeAuthOptions = {
 
 type AuthTypes = Record<string, SnowballAuth<any, any>>
 
-type MakeAuthMap<T extends AuthTypes> = { [K in keyof T]: (opts: MakeAuthOptions) => T[K] }
+type MakeAuthMap<T extends AuthTypes> = {
+  [K in keyof T]: (opts: MakeAuthOptions, prevState?: any) => T[K]
+}
 
 type CreateOpts = {
   apiKey: string
@@ -130,23 +132,22 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   }
 
   switchChain(chain: SnowballChain) {
-    if (this.chainEntries.has(chain.chainId)) {
-      this.currentChainId = chain.chainId
-      return
-    }
-    try {
-      let auths: Auths = {} as Auths
-      for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
-        const auth = makeAuth({ chain, rpcClient: this.rpc })
-        auth.onStateChange = () => this.pubsub.publish()
-        auths[authName as keyof Auths] = auth
+    if (!this.chainEntries.has(chain.chainId)) {
+      try {
+        let current = this.chainEntries.get(this.currentChainId)
+        let auths: Auths = {} as Auths
+        for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
+          const auth = makeAuth({ chain, rpcClient: this.rpc }, current?.auths[authName]?.state)
+          auth.onStateChange = () => this.pubsub.publish()
+          auths[authName as keyof Auths] = auth
+        }
+        this.chainEntries.set(chain.chainId, { auths, chain, smartWallets: {} })
+      } catch (error) {
+        return Promise.reject(SnowballError.make('chain.switch', 'Error switching chain', error))
       }
-
-      this.chainEntries.set(chain.chainId, { auths, chain, smartWallets: {} })
-      this.currentChainId = chain.chainId
-    } catch (error) {
-      return Promise.reject(SnowballError.make('chain.switch', 'Error switching chain', error))
     }
+    this.currentChainId = chain.chainId
+    this.pubsub.publish()
   }
 
   async getSmartWallet(authName: keyof Auths): Promise<SmartWallet> {

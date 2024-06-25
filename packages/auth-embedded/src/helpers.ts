@@ -1,5 +1,9 @@
-import { getWebAuthnAssertion } from '@turnkey/http'
-import { Turnkey } from '@turnkey/sdk-browser'
+import { SnowballChain } from '@snowballtools/js-sdk'
+
+import { TurnkeyClient, getWebAuthnAssertion } from '@turnkey/http'
+import { Turnkey, WebauthnStamper } from '@turnkey/sdk-browser'
+import { createAccount } from '@turnkey/viem'
+import { Transport, createWalletClient } from 'viem'
 
 /**
  * Trigger the webauthn "create" ceremony.
@@ -42,6 +46,39 @@ export async function assertLogin({ challenge }: LoginParams) {
     credentialId: string
     signature: string
   }
+}
+
+type WalletClientParams = {
+  rpId: string
+  chain: SnowballChain
+  baseUrl: string
+  transport: Transport
+  walletAddress: string
+  organizationId: string
+}
+export async function getWalletClient(params: WalletClientParams) {
+  const httpClient = new TurnkeyClient(
+    {
+      baseUrl: params.baseUrl, // "https://api.turnkey.com",
+    },
+    new WebauthnStamper({ rpId: params.rpId }),
+  )
+
+  // Create the Viem custom account
+  const turnkeyAccount = await createAccount({
+    client: httpClient,
+    organizationId: params.organizationId,
+    signWith: params.walletAddress,
+    // optional; will be fetched from Turnkey if not provided
+    // ethereumAddress: '...',
+  })
+
+  const wallet = createWalletClient({
+    account: turnkeyAccount,
+    chain: params.chain.toViemChain(),
+    transport: params.transport,
+  })
+  return wallet
 }
 
 const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')

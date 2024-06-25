@@ -26,7 +26,7 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
     ;(this as any).className = (this.constructor as any).className
   }
 
-  abstract getWallet(): Promise<Wallet | null>
+  abstract getWallet(): Promise<Wallet>
   abstract getWalletAddresses(): Promise<Address[]>
 
   async getWalletAddress(): Promise<Address | null> {
@@ -78,6 +78,12 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
     this.log(error)
     this.setState({ ...this._state, error: error as any, loading: undefined } as State)
     return error
+  }
+
+  protected rejectErr<T extends ErrResult<any, any>>(error: T) {
+    this.log(error)
+    this.setState({ ...this._state, error: error as any, loading: undefined } as State)
+    return Promise.reject(new SnowballError(error.reason, error.code))
   }
 
   protected clearError() {

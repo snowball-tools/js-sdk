@@ -2,9 +2,11 @@ import { SnowballAuth } from '@snowballtools/auth'
 import { MakeAuthOptions } from '@snowballtools/js-sdk'
 import { ErrsOf, err, ok } from '@snowballtools/types'
 import { ApiValues } from '@snowballtools/types'
+import { SnowballError } from '@snowballtools/types'
 
-import { EmbeddedWallet } from './EmbeddedWallet'
-import { assertLogin, turnkeyAttestPasskey } from './helpers'
+import { Chain, LocalAccount, Transport, WalletClient, http } from 'viem'
+
+import { assertLogin, getWalletClient, turnkeyAttestPasskey } from './helpers'
 
 type User = ApiValues['pu_whoami']
 
@@ -19,7 +21,7 @@ export type EmbeddedAuthState = AuthStateLoadingAttrs &
     | { name: 'init' }
     | { name: 'waiting-for-otp'; otp_uuid: string }
     | { name: 'authenticated-no-passkey'; user: User }
-    | { name: 'wallet-ready'; user: User }
+    | { name: 'wallet-ready'; user: User; wallet: Wallet }
   )
 
 type AuthStateLoadingAttrs = {
@@ -33,7 +35,9 @@ export type EmbeddedConfigOptions = {
   auth: Partial<EmbeddedAuthMethodConfig>
 }
 
-export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState> {
+interface Wallet extends WalletClient<Transport, Chain, LocalAccount> {}
+
+export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   static className = 'EmbeddedAuth' as const
   override readonly className = 'EmbeddedAuth' as const
 
@@ -42,7 +46,13 @@ export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState
   }
 
   static configure(opts: EmbeddedConfigOptions) {
-    return (makeOpts: MakeAuthOptions) => new this({ ...opts, ...makeOpts })
+    return (makeOpts: MakeAuthOptions, prevState: any) => {
+      const instance = new this({ ...opts, ...makeOpts })
+      // State is consistent across evm chains
+      // TODO: Handle prevState for different chains (e.g. solana)
+      prevState && (instance._state = prevState)
+      return instance
+    }
   }
 
   constructor(public opts: EmbeddedConfigOptions & MakeAuthOptions) {
@@ -72,10 +82,23 @@ export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState
     })
     if (!res.ok) return this.setErr(res)
 
-    // [ASSUMPTION] A wallet is **always** created when a passkey is first created
+    this.setState({ name: 'authenticated-no-passkey', user: res.value.user })
+
+    if (!res.value.user.wallets.length) {
+      return res
+    }
+
+    const wallet = await this.getWallet()
+
+    if (!wallet) {
+      this.log('Unable to create wallet')
+      return res
+    }
+
     this.setState({
-      name: res.value.user.passkeys.length ? 'wallet-ready' : 'authenticated-no-passkey',
+      name: 'wallet-ready',
       user: res.value.user,
+      wallet,
     })
     return res
   }
@@ -97,14 +120,9 @@ export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState
     const login = await this._rpcClient.loginPasskey({ assertion: assertion.value })
     if (!login.ok) return this.setErr(login)
 
-    // [ASSUMPTION] A wallet is **always** created when a passkey is first created,
-    // and because we just used a passkey, we can assume that the user has a wallet
-    this.setState({ name: 'wallet-ready', user: login.value.user })
-    if (login.value.user.wallets.length === 0) {
-      // This should never happen, but just in case
-      console.warn('[EmbeddedAuth] User has no wallets (weird)')
-      this.setState({ name: 'authenticated-no-passkey', user: login.value.user })
-    }
+    this.setState({ name: 'authenticated-no-passkey', user: login.value.user })
+    await this.getWallet()
+
     return ok({})
   }
 
@@ -143,19 +161,50 @@ export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState
     })
     if (!connect.ok) return this.setErr(connect)
 
-    this.setState({ name: 'wallet-ready', user: connect.value.user })
+    await this.getWallet()
 
     return ok({})
   }
 
   async getWallet() {
-    return this.wallet
+    if (this.state.name === 'wallet-ready') {
+      return this.state.wallet
+    }
+    if (this.state.name !== 'authenticated-no-passkey') {
+      return this.setError(
+        new SnowballError('EmbeddedAuth.getWallet', `Invalid state: ${this.state.name}`),
+      )
+    }
+    this.setLoading('emb:getWalletConfig', 'Retrieving wallet')
+    const [config, walletConfig] = await Promise.all([
+      this._rpcClient.getAuthConfig({}),
+      this._rpcClient.pu_getWalletConfig({}),
+    ])
+    if (!config.ok) return this.rejectErr(config)
+    if (!walletConfig.ok) return this.rejectErr(walletConfig)
+
+    this.setLoading('emb:getWalletClient', 'Retrieving wallet')
+    const provider = walletConfig.value.provider
+    const wallet = await getWalletClient({
+      rpId: config.value.turnkey.rpId,
+      chain: this.chain,
+      baseUrl: config.value.turnkey.apiBaseUrl,
+      organizationId: walletConfig.value.organizationId,
+      walletAddress: this.state.user.wallets[0]!.accounts[0]!.address,
+      transport: http(
+        provider.type === 'key-a'
+          ? this.chain.alchemyRpcUrls(provider.value)[0]
+          : provider.type === 'url'
+            ? provider.value
+            : '',
+      ),
+    })
+    this.setState({ name: 'wallet-ready', user: this.state.user, wallet })
+    return wallet
   }
 
   get wallet() {
-    return this.state.name === 'wallet-ready'
-      ? new EmbeddedWallet(this.state.user.wallets[0]!.accounts)
-      : null
+    return this.state.name === 'wallet-ready' ? this.state.wallet : null
   }
 
   async getWalletAddresses() {
@@ -163,6 +212,10 @@ export class EmbeddedAuth extends SnowballAuth<EmbeddedWallet, EmbeddedAuthState
       return []
     }
     return this.state.user.wallets[0]!.accounts.map((a) => a.address)
+  }
+
+  get user() {
+    return 'user' in this.state ? this.state.user : null
   }
 
   reset() {

@@ -7,6 +7,7 @@ export type ApiRpcs = {
   loginPasskey: (params: { assertion: { credentialId: string; clientDataJson: string; signature: string; authenticatorData: string; }; }) => Promise<ErrResult<"unexpected"> | ErrResult<"user_not_found"> | ErrResult<"credential_not_found"> | ErrResult<"verify_failed"> | OkResult<{ user: Whoami; newSession: { token: string; expiresAt: number; refreshToken: string; }; }>>
   pu_whoami: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<Whoami>>
   getAuthConfig: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<{ turnkey: { rpId: string; orgId: string; rpName: string; apiBaseUrl: string; }; loginChallenge: string; }>>
+  pu_getWalletConfig: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<{ organizationId: string; provider: { type: "key-a"; value: string; } | { type: "url"; value: string; }; }>>
 };
 export type ApiParams = {
   [K in keyof ApiRpcs]: {
