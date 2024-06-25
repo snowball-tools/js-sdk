@@ -1,5 +1,13 @@
 # @snowballtools/auth
 
+## 0.3.1
+
+### Patch Changes
+
+- Transactions
+- Updated dependencies
+  - @snowballtools/types@0.3.1
+
 ## 0.3.0
 
 ### Minor Changes
