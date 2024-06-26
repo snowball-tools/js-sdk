@@ -1,5 +1,11 @@
 # @snowballtools/auth-lit
 
+## 0.3.2
+
+### Patch Changes
+
+- UX improvements
+
 ## 0.3.1
 
 ### Patch Changes
