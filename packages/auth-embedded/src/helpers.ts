@@ -53,6 +53,7 @@ type WalletClientParams = {
   chain: SnowballChain
   baseUrl: string
   transport: Transport
+  credentialIds: string[]
   walletAddress: string
   organizationId: string
 }
@@ -61,7 +62,13 @@ export async function getWalletClient(params: WalletClientParams) {
     {
       baseUrl: params.baseUrl, // "https://api.turnkey.com",
     },
-    new WebauthnStamper({ rpId: params.rpId }),
+    new WebauthnStamper({
+      rpId: params.rpId,
+      allowCredentials: params.credentialIds.map((credentialId) => ({
+        id: base64UrlDecode(credentialId),
+        type: 'public-key',
+      })),
+    }),
   )
 
   // Create the Viem custom account
@@ -79,6 +86,26 @@ export async function getWalletClient(params: WalletClientParams) {
     transport: params.transport,
   })
   return wallet
+}
+
+function base64UrlDecode(base64Url: string): ArrayBuffer {
+  // Convert base64url to base64 by replacing characters
+  const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
+
+  // Pad with '=' if needed
+  const padding = '='.repeat((4 - (base64.length % 4)) % 4)
+  const base64Padded = base64 + padding
+
+  // Decode base64 to binary string
+  const binaryString = atob(base64Padded)
+
+  // Convert binary string to Uint8Array
+  const uint8Array = new Uint8Array(binaryString.length)
+  for (let i = 0; i < binaryString.length; i++) {
+    uint8Array[i] = binaryString.charCodeAt(i)
+  }
+
+  return uint8Array.buffer.slice(0) as ArrayBuffer
 }
 
 const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')

@@ -190,6 +190,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
       rpId: config.value.turnkey.rpId,
       chain: this.chain,
       baseUrl: config.value.turnkey.apiBaseUrl,
+      credentialIds: this.state.user.passkeys.map((passkey) => passkey.credentialId),
       organizationId: walletConfig.value.organizationId,
       walletAddress: this.state.user.wallets[0]!.accounts[0]!.address,
       transport: http(
