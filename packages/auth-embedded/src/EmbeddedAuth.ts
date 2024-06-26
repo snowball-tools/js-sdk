@@ -161,6 +161,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     })
     if (!connect.ok) return this.setErr(connect)
 
+    this.setState({ name: 'authenticated-no-passkey', user: connect.value.user })
     await this.getWallet()
 
     return ok({})
