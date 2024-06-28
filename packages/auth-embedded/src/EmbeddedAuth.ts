@@ -96,12 +96,6 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
       this.log('Unable to create wallet')
       return res
     }
-
-    this.setState({
-      name: 'wallet-ready',
-      user: res.value.user,
-      wallet,
-    })
     return res
   }
 
