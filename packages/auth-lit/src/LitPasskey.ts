@@ -17,11 +17,11 @@ export class LitPasskeyAuth extends SnowballLitAuth {
   provider: WebAuthnProvider
 
   static configure(opts: LitConfigOptions) {
-    return (makeOpts: MakeAuthOptions) => new this({ ...opts, ...makeOpts })
+    return (makeOpts: MakeAuthOptions) => new this(makeOpts, opts)
   }
 
-  constructor(opts: LitConfigOptions & MakeAuthOptions) {
-    super(opts)
+  constructor(makeOpts: MakeAuthOptions, opts: LitConfigOptions) {
+    super(makeOpts, opts)
     this.provider = this.litAuthClient.initProvider(ProviderType.WebAuthn)
   }
 

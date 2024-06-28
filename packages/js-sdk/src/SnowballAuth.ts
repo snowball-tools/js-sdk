@@ -4,6 +4,8 @@ import type { SnowballChain } from '@snowballtools/utils'
 
 import debug from 'debug'
 
+import { makeRpcClient } from './rpc-client'
+
 export type AuthStateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
   loading?: { code: string; message: string }
@@ -15,15 +17,17 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
   static className: string
   abstract readonly className: string
 
+  protected _chain: SnowballChain
   protected _state = {}
   onStateChange?: (state: State) => void
 
-  constructor(
-    protected _rpcClient: ApiClient,
-    protected _chain: SnowballChain,
-  ) {
+  protected rpc: ApiClient
+
+  constructor(options: { apiUrl?: string; apiKey: string; chain: SnowballChain }) {
     // Hack to initialize this.className before anything else
     ;(this as any).className = (this.constructor as any).className
+    this._chain = options.chain
+    this.rpc = makeRpcClient(options.apiKey, options.apiUrl || 'https://api.snowball.build/v1')
   }
 
   abstract getWallet(): Promise<Wallet>

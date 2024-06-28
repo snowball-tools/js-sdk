@@ -1,4 +1,4 @@
-import { AuthStateLoadingAttrs, SnowballAuth } from '@snowballtools/auth'
+import { AuthStateLoadingAttrs, SnowballAuth } from '@snowballtools/js-sdk'
 import { SnowballError } from '@snowballtools/types'
 import { Address } from '@snowballtools/types'
 
@@ -54,8 +54,8 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
   protected abstract _getProvider(): BaseProvider
 
-  constructor(opts: LitConfigOptions & MakeAuthOptions) {
-    super(opts.rpcClient, opts.chain)
+  constructor(makeOpts: MakeAuthOptions, opts: LitConfigOptions) {
+    super(makeOpts)
 
     this.log('init')
 

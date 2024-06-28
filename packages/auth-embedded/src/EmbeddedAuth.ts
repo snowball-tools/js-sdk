@@ -1,5 +1,4 @@
-import { SnowballAuth } from '@snowballtools/auth'
-import { MakeAuthOptions } from '@snowballtools/js-sdk'
+import { MakeAuthOptions, SnowballAuth } from '@snowballtools/js-sdk'
 import { ErrsOf, err, ok } from '@snowballtools/types'
 import { ApiValues } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
@@ -47,7 +46,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
 
   static configure(opts: EmbeddedConfigOptions) {
     return (makeOpts: MakeAuthOptions, prevState: any) => {
-      const instance = new this({ ...opts, ...makeOpts })
+      const instance = new this(makeOpts, opts)
       // State is consistent across evm chains
       // TODO: Handle prevState for different chains (e.g. solana)
       prevState && (instance._state = prevState)
@@ -55,15 +54,18 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     }
   }
 
-  constructor(public opts: EmbeddedConfigOptions & MakeAuthOptions) {
-    super(opts.rpcClient, opts.chain)
+  constructor(
+    makeOpts: MakeAuthOptions,
+    private opts: EmbeddedConfigOptions,
+  ) {
+    super(makeOpts)
     this.log('init')
     this._state = { name: 'init' }
   }
 
   async sendOtp(args: { email: string }) {
     this.setLoading('emb:sendOtp', 'Sending OTP')
-    const res = await this._rpcClient.sendOtp({ auth: { type: 'email', value: args.email } })
+    const res = await this.rpc.sendOtp({ auth: { type: 'email', value: args.email } })
     if (!res.ok) return this.setErr(res)
     this.setState({ name: 'waiting-for-otp', otp_uuid: res.value.uuid })
     return res
@@ -76,7 +78,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
       )
     }
     this.setLoading('emb:verifyOtp', 'Verifying OTP')
-    const res = await this._rpcClient.verifyOtp({
+    const res = await this.rpc.verifyOtp({
       uuid: this.state.otp_uuid,
       code: args.code,
     })
@@ -105,7 +107,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
 
   async login() {
     this.setLoading('emb:getAuthConfig', 'Retrieving auth config')
-    const config = await this._rpcClient.getAuthConfig({})
+    const config = await this.rpc.getAuthConfig({})
     if (!config.ok) return this.setErr(config)
 
     this.setLoading('emb:login:passkey', 'Logging in')
@@ -117,7 +119,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     if (!assertion.ok) return this.setErr(assertion)
 
     this.setLoading('emb:login:rpc', 'Logging in')
-    const login = await this._rpcClient.loginPasskey({ assertion: assertion.value })
+    const login = await this.rpc.loginPasskey({ assertion: assertion.value })
     if (!login.ok) return this.setErr(login)
 
     this.setState({ name: 'authenticated-no-passkey', user: login.value.user })
@@ -137,7 +139,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     if (!email) return this.setErr(err('email_not_found', 'e574623491'))
 
     this.setLoading('emb:getAuthConfig', 'Retrieving auth config')
-    const config = await this._rpcClient.getAuthConfig({})
+    const config = await this.rpc.getAuthConfig({})
     if (!config.ok) return this.setErr(config)
 
     this.setLoading('emb:attest', 'Attesting passkey')
@@ -155,7 +157,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     if (!attest.ok) return this.setErr(attest)
 
     this.setLoading('emb:connectPasskey', 'Creating new user')
-    const connect = await this._rpcClient.pu_connectPasskey({
+    const connect = await this.rpc.pu_connectPasskey({
       challenge: attest.value.credential.encodedChallenge,
       attestation: attest.value.credential.attestation,
     })
@@ -178,8 +180,8 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     }
     this.setLoading('emb:getWalletConfig', 'Retrieving wallet')
     const [config, walletConfig] = await Promise.all([
-      this._rpcClient.getAuthConfig({}),
-      this._rpcClient.pu_getWalletConfig({}),
+      this.rpc.getAuthConfig({}),
+      this.rpc.pu_getWalletConfig({}),
     ])
     if (!config.ok) return this.rejectErr(config)
     if (!walletConfig.ok) return this.rejectErr(walletConfig)
@@ -225,6 +227,6 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   }
 
   getSessionExpirationTime(): number {
-    return this._rpcClient.getSessionExpirationTime()
+    return this.rpc.getSessionExpirationTime()
   }
 }

@@ -17,7 +17,7 @@ export class LitGoogleAuth extends LitOAuth {
   private _provider?: GoogleProvider
 
   static configure(opts: LitConfigOptions) {
-    return (makeOpts: MakeAuthOptions) => new this({ ...opts, ...makeOpts })
+    return (makeOpts: MakeAuthOptions) => new this(makeOpts, opts)
   }
 
   /**
