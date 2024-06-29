@@ -4,7 +4,9 @@ import type { SnowballChain } from '@snowballtools/utils'
 
 import debug from 'debug'
 
-import { makeRpcClient } from './rpc-client'
+import { ApiValues, makeRpcClient } from './rpc-client'
+
+type User = ApiValues['pu_whoami']
 
 export type AuthStateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
@@ -23,11 +25,36 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
 
   protected rpc: ApiClient
 
-  constructor(options: { apiUrl?: string; apiKey: string; chain: SnowballChain }) {
+  constructor(options: {
+    rpc?: ApiClient
+    chain: SnowballChain
+    apiUrl?: string
+    apiKey: string
+    storageKey: string
+  }) {
     // Hack to initialize this.className before anything else
     ;(this as any).className = (this.constructor as any).className
     this._chain = options.chain
-    this.rpc = makeRpcClient(options.apiKey, options.apiUrl || 'https://api.snowball.build/v1')
+    this.rpc =
+      options.rpc ||
+      makeRpcClient(
+        options.apiKey,
+        options.apiUrl || 'https://api.snowball.build/v1',
+        options.storageKey,
+      )
+  }
+
+  /** Attempts to load an existing user session, if one exists. */
+  abstract initUserSession(): void
+
+  protected async getUser() {
+    if (!this.rpc.hasValidSession()) return null
+    const res = await this.rpc.pu_whoami({})
+    if (!res.ok) {
+      this.log('Failed to fetch user session', res)
+      return null
+    }
+    return res.value
   }
 
   abstract getWallet(): Promise<Wallet>

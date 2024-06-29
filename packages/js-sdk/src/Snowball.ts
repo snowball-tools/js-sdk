@@ -1,5 +1,6 @@
 import { Address } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
+import { ApiClient } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
 import { SnowballSmartWallet } from './SmartWallet'
@@ -12,6 +13,7 @@ export type SnowballOptions<Auths extends AuthTypes, SmartWallet extends Snowbal
   chain: SnowballChain
   apiKey: string
   apiUrl?: string
+  ssrMode?: boolean
   makeAuth: MakeAuthMap<Auths>
   makeSmartWallet: (
     chain: SnowballChain,
@@ -25,6 +27,7 @@ export type SnowballInitStatus =
   | { name: 'ready' }
 
 export type MakeAuthOptions = {
+  rpc?: ApiClient
   chain: SnowballChain
   apiKey: string
   apiUrl?: string
@@ -33,12 +36,13 @@ export type MakeAuthOptions = {
 type AuthTypes = Record<string, SnowballAuth<any, any>>
 
 type MakeAuthMap<T extends AuthTypes> = {
-  [K in keyof T]: (opts: MakeAuthOptions, prevState?: any) => T[K]
+  [K in keyof T]: (opts: MakeAuthOptions, prev?: T[K]) => T[K]
 }
 
 type CreateOpts = {
   apiKey: string
   apiUrl?: string
+  ssrMode?: boolean
   initialChain: SnowballChain
 }
 
@@ -52,6 +56,14 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   private currentChainId!: number
 
   private pubsub = makePubSub()
+
+  /**
+   * React/Next ssr is AWFUL to work with when initializing state that depends on I/O.
+   * This flag is used to ensure that downstream SnowballAuth constructors
+   * don't try to read from localStorage before a useEffect has run,
+   * indicating that it's "safe" to change state without causing hydration errors.
+   */
+  private canInitUserSessions: boolean
 
   static Chain = SnowballChain
 
@@ -89,6 +101,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   }
 
   constructor(private opts: SnowballOptions<Auths, SmartWallet>) {
+    this.canInitUserSessions = opts.ssrMode ? false : true
     this.#apiKey = opts.apiKey
     this.apiUrl = opts.apiUrl
     this.switchChain(this.opts.chain)
@@ -132,6 +145,15 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
     return (validSessions[0] as Auths[keyof Auths]) || null
   }
 
+  initUserSessions() {
+    const sessions = Object.values(this.auth)
+    for (const sess of sessions) {
+      // Ok to always do since auths will only do work if they need to
+      sess.initUserSession()
+    }
+    this.canInitUserSessions = true
+  }
+
   switchChain(chain: SnowballChain) {
     if (!this.chainEntries.has(chain.chainId)) {
       try {
@@ -139,7 +161,10 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
         let auths: Auths = {} as Auths
         for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
           const makeOpts = { chain, apiKey: this.#apiKey, apiUrl: this.apiUrl }
-          const auth = makeAuth(makeOpts, current?.auths[authName]?.state)
+          const auth = makeAuth(makeOpts, current?.auths[authName])
+          if (this.canInitUserSessions) {
+            auth.initUserSession()
+          }
           auth.onStateChange = () => this.pubsub.publish()
           auths[authName as keyof Auths] = auth
         }

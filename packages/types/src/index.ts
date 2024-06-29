@@ -9,6 +9,7 @@ export * from './result'
 export { SnowballError } from './error'
 
 export type ApiClient = ApiRpcs & {
+  logout(): void
   readonly apiUrl: string
   readonly hasValidSession: () => boolean
   /** Returns 0 if session not present */

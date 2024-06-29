@@ -54,8 +54,11 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
   protected abstract _getProvider(): BaseProvider
 
+  static readonly STORAGE_KEY = 'sb_eth_auth_lit'
+
   constructor(makeOpts: MakeAuthOptions, opts: LitConfigOptions) {
-    super(makeOpts)
+    // TODO: Handle different chains for storageKey (e.g. solana)
+    super({ ...makeOpts, storageKey: SnowballLitAuth.STORAGE_KEY })
 
     this.log('init')
 
@@ -88,6 +91,8 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
     this._loadSessionSigs()
   }
+
+  initUserSession() {}
 
   async getWallet() {
     if (this.wallet) {
@@ -163,8 +168,9 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     return [(await wallet.getAddress()) as Address]
   }
 
-  reset() {
+  logout() {
     this.setState({ name: 'init' })
+    this.rpc.logout()
   }
 
   getSessionExpirationTime() {

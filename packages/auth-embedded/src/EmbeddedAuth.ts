@@ -17,8 +17,9 @@ export type EmbeddedAuthMethodConfig = {
 
 export type EmbeddedAuthState = AuthStateLoadingAttrs &
   (
-    | { name: 'init' }
-    | { name: 'waiting-for-otp'; otp_uuid: string }
+    | { name: 'initializing'; user?: User }
+    | { name: 'no-session'; user?: User }
+    | { name: 'waiting-for-otp'; otp_uuid: string; user?: User }
     | { name: 'authenticated-no-passkey'; user: User }
     | { name: 'wallet-ready'; user: User; wallet: Wallet }
   )
@@ -45,22 +46,44 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   }
 
   static configure(opts: EmbeddedConfigOptions) {
-    return (makeOpts: MakeAuthOptions, prevState: any) => {
-      const instance = new this(makeOpts, opts)
-      // State is consistent across evm chains
-      // TODO: Handle prevState for different chains (e.g. solana)
-      prevState && (instance._state = prevState)
+    return (makeOpts: MakeAuthOptions, prev?: EmbeddedAuth) => {
+      const instance = new this({ ...makeOpts, rpc: prev?.rpc }, opts)
+      if (prev) {
+        // State is consistent across evm chains
+        // TODO: Handle prev for different chains (e.g. solana)
+        instance._state = prev._state
+      }
       return instance
     }
   }
+
+  static readonly STORAGE_KEY = 'sb_eth_auth'
 
   constructor(
     makeOpts: MakeAuthOptions,
     private opts: EmbeddedConfigOptions,
   ) {
-    super(makeOpts)
+    // TODO: Handle different chains for storageKey (e.g. solana)
+    super({ ...makeOpts, storageKey: EmbeddedAuth.STORAGE_KEY })
     this.log('init')
-    this._state = { name: 'init' }
+    this._state = { name: 'initializing' }
+  }
+
+  async initUserSession() {
+    if (this.state.name !== 'initializing' || this.state.loading) return
+
+    this.setLoading('emb:initUserSession', 'Initializing user session')
+    const user = await this.getUser()
+    if (!user) return this.setState({ name: 'no-session' })
+
+    if (user.wallets.length) {
+      this.setLoading('emb:initWallet', 'Initializing wallet')
+      this.setState({ name: 'initializing', user })
+      await this.getWallet()
+    } else {
+      // [ASSUMPTION]: If user has no wallets, then they must not have a passkey
+      this.setState({ name: 'authenticated-no-passkey', user })
+    }
   }
 
   async sendOtp(args: { email: string }) {
@@ -84,12 +107,12 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     })
     if (!res.ok) return this.setErr(res)
 
-    this.setState({ name: 'authenticated-no-passkey', user: res.value.user })
-
     if (!res.value.user.wallets.length) {
+      this.setState({ name: 'authenticated-no-passkey', user: res.value.user })
       return res
     }
 
+    this.setState({ ...this.state, user: res.value.user })
     const wallet = await this.getWallet()
 
     if (!wallet) {
@@ -116,7 +139,9 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     const login = await this.rpc.loginPasskey({ assertion: assertion.value })
     if (!login.ok) return this.setErr(login)
 
-    this.setState({ name: 'authenticated-no-passkey', user: login.value.user })
+    this.setState({ ...this.state, user: login.value.user })
+
+    // [ASSUMPTION]: If passkey auth worked, then user must have a wallet
     await this.getWallet()
 
     return ok({})
@@ -167,11 +192,13 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     if (this.state.name === 'wallet-ready') {
       return this.state.wallet
     }
-    if (this.state.name !== 'authenticated-no-passkey') {
+    if (!('user' in this.state) || !this.state.user) {
       return this.setError(
         new SnowballError('EmbeddedAuth.getWallet', `Invalid state: ${this.state.name}`),
       )
     }
+    const user = this.state.user
+
     this.setLoading('emb:getWalletConfig', 'Retrieving wallet')
     const [config, walletConfig] = await Promise.all([
       this.rpc.getAuthConfig({}),
@@ -186,9 +213,9 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
       rpId: config.value.turnkey.rpId,
       chain: this.chain,
       baseUrl: config.value.turnkey.apiBaseUrl,
-      credentialIds: this.state.user.passkeys.map((passkey) => passkey.credentialId),
+      credentialIds: user.passkeys.map((passkey) => passkey.credentialId),
       organizationId: walletConfig.value.organizationId,
-      walletAddress: this.state.user.wallets[0]!.accounts[0]!.address,
+      walletAddress: user.wallets[0]!.accounts[0]!.address,
       transport: http(
         provider.type === 'key-a'
           ? this.chain.alchemyRpcUrls(provider.value)[0]
@@ -197,7 +224,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
             : '',
       ),
     })
-    this.setState({ name: 'wallet-ready', user: this.state.user, wallet })
+    this.setState({ name: 'wallet-ready', user, wallet })
     return wallet
   }
 
@@ -216,8 +243,9 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     return 'user' in this.state ? this.state.user : null
   }
 
-  reset() {
-    this.setState({ name: 'init' })
+  logout() {
+    this.setState({ name: 'no-session' })
+    this.rpc.logout()
   }
 
   getSessionExpirationTime(): number {
