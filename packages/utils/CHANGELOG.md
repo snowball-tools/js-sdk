@@ -1,5 +1,11 @@
 # @snowballtools/utils
 
+## 0.4.0
+
+### Minor Changes
+
+- Session persistence
+
 ## 0.3.0
 
 ### Minor Changes

@@ -1,5 +1,16 @@
 # @snowballtools/js-sdk
 
+## 0.4.0
+
+### Minor Changes
+
+- Session persistence
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/utils@0.4.0
+
 ## 0.2.1
 
 ### Patch Changes

@@ -1,5 +1,16 @@
 # @snowballtools/auth-lit
 
+## 0.4.0
+
+### Minor Changes
+
+- Session persistence
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/utils@0.4.0
+
 ## 0.3.0
 
 ### Minor Changes
