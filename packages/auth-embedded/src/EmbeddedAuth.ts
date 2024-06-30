@@ -5,7 +5,7 @@ import { SnowballError } from '@snowballtools/types'
 
 import { Chain, LocalAccount, Transport, WalletClient, http } from 'viem'
 
-import { assertLogin, getWalletClient, turnkeyAttestPasskey } from './helpers'
+import { WalletClientParams, assertLogin, makeWalletClient, turnkeyAttestPasskey } from './helpers'
 
 type User = ApiValues['pu_whoami']
 
@@ -21,7 +21,7 @@ export type EmbeddedAuthState = AuthStateLoadingAttrs &
     | { name: 'no-session'; user?: User }
     | { name: 'waiting-for-otp'; otp_uuid: string; user?: User }
     | { name: 'authenticated-no-passkey'; user: User }
-    | { name: 'wallet-ready'; user: User; wallet: Wallet }
+    | { name: 'wallet-ready'; user: User; wallet: Wallet; walletParams: WalletClientParams }
   )
 
 type AuthStateLoadingAttrs = {
@@ -47,24 +47,31 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
 
   static configure(opts: EmbeddedConfigOptions) {
     return (makeOpts: MakeAuthOptions, prev?: EmbeddedAuth) => {
-      const instance = new this({ ...makeOpts, rpc: prev?.rpc }, opts)
-      if (prev) {
-        // State is consistent across evm chains
-        // TODO: Handle prev for different chains (e.g. solana)
-        instance._state = prev._state
+      const instance = new this(makeOpts, opts)
+      if (prev && makeOpts.chain.vmType === prev?.chain.vmType) {
+        // Copy over state but with new chain
+        if (prev.state.name === 'wallet-ready') {
+          const walletParams = {
+            ...prev.state.walletParams,
+            chain: makeOpts.chain,
+          }
+          const wallet = makeWalletClient(walletParams)
+          instance.setState({ ...prev.state, walletParams, wallet })
+        } else {
+          instance.setState(prev.state)
+        }
+      } else if (prev) {
+        // TODO: Handle switching to different types of chains (e.g. EVM -> Solana)
       }
       return instance
     }
   }
 
-  static readonly STORAGE_KEY = 'sb_eth_auth'
-
   constructor(
     makeOpts: MakeAuthOptions,
     private opts: EmbeddedConfigOptions,
   ) {
-    // TODO: Handle different chains for storageKey (e.g. solana)
-    super({ ...makeOpts, storageKey: EmbeddedAuth.STORAGE_KEY })
+    super(makeOpts)
     this.log('init')
     this._state = { name: 'initializing' }
   }
@@ -207,9 +214,8 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     if (!config.ok) return this.rejectErr(config)
     if (!walletConfig.ok) return this.rejectErr(walletConfig)
 
-    this.setLoading('emb:getWalletClient', 'Retrieving wallet')
     const provider = walletConfig.value.provider
-    const wallet = await getWalletClient({
+    const walletParams = {
       rpId: config.value.turnkey.rpId,
       chain: this.chain,
       baseUrl: config.value.turnkey.apiBaseUrl,
@@ -223,8 +229,11 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
             ? provider.value
             : '',
       ),
-    })
-    this.setState({ name: 'wallet-ready', user, wallet })
+    }
+
+    this.setLoading('emb:makeWalletClient', 'Constructing wallet')
+    const wallet = makeWalletClient(walletParams)
+    this.setState({ name: 'wallet-ready', user, wallet, walletParams })
     return wallet
   }
 

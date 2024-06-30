@@ -2,7 +2,7 @@ import { SnowballChain } from '@snowballtools/js-sdk'
 
 import { TurnkeyClient, getWebAuthnAssertion } from '@turnkey/http'
 import { Turnkey, WebauthnStamper } from '@turnkey/sdk-browser'
-import { createAccount } from '@turnkey/viem'
+import { createAccountSync } from '@turnkey/viem'
 import { Transport, createWalletClient } from 'viem'
 
 /**
@@ -48,7 +48,7 @@ export async function assertLogin({ challenge }: LoginParams) {
   }
 }
 
-type WalletClientParams = {
+export type WalletClientParams = {
   rpId: string
   chain: SnowballChain
   baseUrl: string
@@ -57,7 +57,7 @@ type WalletClientParams = {
   walletAddress: string
   organizationId: string
 }
-export async function getWalletClient(params: WalletClientParams) {
+export function makeWalletClient(params: WalletClientParams) {
   const httpClient = new TurnkeyClient(
     {
       baseUrl: params.baseUrl, // "https://api.turnkey.com",
@@ -72,12 +72,10 @@ export async function getWalletClient(params: WalletClientParams) {
   )
 
   // Create the Viem custom account
-  const turnkeyAccount = await createAccount({
+  const turnkeyAccount = createAccountSync({
     client: httpClient,
     organizationId: params.organizationId,
     signWith: params.walletAddress,
-    // optional; will be fetched from Turnkey if not provided
-    // ethereumAddress: '...',
   })
 
   const wallet = createWalletClient({

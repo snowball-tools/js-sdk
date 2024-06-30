@@ -1,0 +1,123 @@
+diff --git a/node_modules/@turnkey/viem/dist/index.d.ts b/node_modules/@turnkey/viem/dist/index.d.ts
+index af2df4f..a3e02c2 100644
+--- a/node_modules/@turnkey/viem/dist/index.d.ts
++++ b/node_modules/@turnkey/viem/dist/index.d.ts
+@@ -8,6 +8,12 @@ export declare function createAccount(input: {
+     signWith: string;
+     ethereumAddress?: string;
+ }): Promise<LocalAccount>;
++export declare function createAccountSync(input: {
++    client: TurnkeyClient | TurnkeyBrowserClient | TurnkeyServerClient;
++    organizationId: string;
++    signWith: string;
++    ethereumAddress?: string;
++}): LocalAccount;
+ /**
+  * Type bundling configuration for an API Key Viem account creation
+  * @deprecated this is used only with {@link createApiKeyAccount}, a deprecated API. See {@link createAccount}.
+diff --git a/node_modules/@turnkey/viem/dist/index.js b/node_modules/@turnkey/viem/dist/index.js
+index 245c5dd..b0d6a41 100644
+--- a/node_modules/@turnkey/viem/dist/index.js
++++ b/node_modules/@turnkey/viem/dist/index.js
+@@ -46,6 +46,40 @@ async function createAccount(input) {
+         },
+     });
+ }
++async function createAccountSync(input) {
++    const { client, organizationId, signWith } = input;
++    let { ethereumAddress } = input;
++    if (!signWith) {
++        throw new http.TurnkeyActivityError({
++            message: `Missing signWith parameter`,
++        });
++    }
++    if (viem.isAddress(signWith)) {
++        // override provided `ethereumAddress`
++        ethereumAddress = signWith;
++    }
++    else if (!ethereumAddress) {
++        // we have a private key ID, but not an ethereumAddress
++        throw new http.TurnkeyActivityError({
++            message: `Unable to find Ethereum address for key ${signWith} under organization ${organizationId}`,
++        });
++    }
++    return accounts.toAccount({
++        address: ethereumAddress,
++        signMessage: function ({ message, }) {
++            return signMessage(client, message, organizationId, signWith);
++        },
++        signTransaction: function (transaction, args) {
++            const serializer = !args?.serializer
++                ? viem.serializeTransaction
++                : args.serializer;
++            return signTransaction(client, transaction, serializer, organizationId, signWith);
++        },
++        signTypedData: function (typedData) {
++            return signTypedData(client, typedData, organizationId, signWith);
++        },
++    });
++}
+ /**
+  * Creates a new Custom Account backed by a Turnkey API key.
+  * @deprecated use {@link createAccount} instead.
+@@ -215,6 +249,7 @@ function assertNonNull(input) {
+ }
+ 
+ exports.createAccount = createAccount;
++exports.createAccountSync = createAccountSync;
+ exports.createApiKeyAccount = createApiKeyAccount;
+ exports.signMessage = signMessage;
+ exports.signTransaction = signTransaction;
+diff --git a/node_modules/@turnkey/viem/dist/index.mjs b/node_modules/@turnkey/viem/dist/index.mjs
+index 16e8e91..bfd93cd 100644
+--- a/node_modules/@turnkey/viem/dist/index.mjs
++++ b/node_modules/@turnkey/viem/dist/index.mjs
+@@ -44,6 +44,41 @@ async function createAccount(input) {
+         },
+     });
+ }
++async function createAccountSync(input) {
++    const { client, organizationId, signWith } = input;
++    let { ethereumAddress } = input;
++    if (!signWith) {
++        throw new TurnkeyActivityError({
++            message: `Missing signWith parameter`,
++        });
++    }
++    if (isAddress(signWith)) {
++        // override provided `ethereumAddress`
++        ethereumAddress = signWith;
++    }
++    else if (!ethereumAddress) {
++        // we have a private key ID, but not an ethereumAddress
++        throw new TurnkeyActivityError({
++            message: `Unable to find Ethereum address for key ${signWith} under organization ${organizationId}`,
++        });
++
++    }
++    return toAccount({
++        address: ethereumAddress,
++        signMessage: function ({ message, }) {
++            return signMessage(client, message, organizationId, signWith);
++        },
++        signTransaction: function (transaction, args) {
++            const serializer = !args?.serializer
++                ? serializeTransaction
++                : args.serializer;
++            return signTransaction(client, transaction, serializer, organizationId, signWith);
++        },
++        signTypedData: function (typedData) {
++            return signTypedData(client, typedData, organizationId, signWith);
++        },
++    });
++}
+ /**
+  * Creates a new Custom Account backed by a Turnkey API key.
+  * @deprecated use {@link createAccount} instead.
+@@ -212,5 +247,5 @@ function assertNonNull(input) {
+     return input;
+ }
+ 
+-export { createAccount, createApiKeyAccount, signMessage, signTransaction, signTypedData };
++export { createAccount, createAccountSync, createApiKeyAccount, signMessage, signTransaction, signTypedData };
+ //# sourceMappingURL=index.mjs.map

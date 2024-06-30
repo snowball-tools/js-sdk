@@ -6,6 +6,7 @@ import { SnowballChain } from '@snowballtools/utils'
 import { SnowballSmartWallet } from './SmartWallet'
 import { SnowballAuth } from './SnowballAuth'
 import { makePubSub } from './pubsub'
+import { makeRpcClient } from './rpc-client'
 
 type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
 
@@ -27,10 +28,8 @@ export type SnowballInitStatus =
   | { name: 'ready' }
 
 export type MakeAuthOptions = {
-  rpc?: ApiClient
+  rpc: ApiClient
   chain: SnowballChain
-  apiKey: string
-  apiUrl?: string
 }
 
 type AuthTypes = Record<string, SnowballAuth<any, any>>
@@ -47,8 +46,6 @@ type CreateOpts = {
 }
 
 export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> {
-  #apiKey: string
-  apiUrl?: string
   private chainEntries = new Map<
     number,
     { chain: SnowballChain; auths: Auths; smartWallets: Record<string, SmartWallet> }
@@ -56,6 +53,8 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   private currentChainId!: number
 
   private pubsub = makePubSub()
+
+  rpc: ApiClient
 
   /**
    * React/Next ssr is AWFUL to work with when initializing state that depends on I/O.
@@ -100,10 +99,16 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
     }
   }
 
+  static readonly STORAGE_KEY = 'sb_session'
+
   constructor(private opts: SnowballOptions<Auths, SmartWallet>) {
     this.canInitUserSessions = opts.ssrMode ? false : true
-    this.#apiKey = opts.apiKey
-    this.apiUrl = opts.apiUrl
+    this.rpc = makeRpcClient(
+      opts.apiKey,
+      opts.apiUrl || 'https://api.snowball.build/v1',
+      Snowball.STORAGE_KEY,
+    )
+
     this.switchChain(this.opts.chain)
   }
 
@@ -160,7 +165,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
         let current = this.chainEntries.get(this.currentChainId)
         let auths: Auths = {} as Auths
         for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
-          const makeOpts = { chain, apiKey: this.#apiKey, apiUrl: this.apiUrl }
+          const makeOpts = { chain, rpc: this.rpc }
           const auth = makeAuth(makeOpts, current?.auths[authName])
           if (this.canInitUserSessions) {
             auth.initUserSession()

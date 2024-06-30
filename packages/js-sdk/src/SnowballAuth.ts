@@ -25,23 +25,11 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
 
   protected rpc: ApiClient
 
-  constructor(options: {
-    rpc?: ApiClient
-    chain: SnowballChain
-    apiUrl?: string
-    apiKey: string
-    storageKey: string
-  }) {
+  constructor(options: { rpc: ApiClient; chain: SnowballChain }) {
     // Hack to initialize this.className before anything else
     ;(this as any).className = (this.constructor as any).className
     this._chain = options.chain
-    this.rpc =
-      options.rpc ||
-      makeRpcClient(
-        options.apiKey,
-        options.apiUrl || 'https://api.snowball.build/v1',
-        options.storageKey,
-      )
+    this.rpc = options.rpc
   }
 
   /** Attempts to load an existing user session, if one exists. */
