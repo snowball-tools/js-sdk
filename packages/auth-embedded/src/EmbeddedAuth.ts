@@ -252,7 +252,7 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
     return 'user' in this.state ? this.state.user : null
   }
 
-  logout() {
+  async logout() {
     this.setState({ name: 'no-session' })
     this.rpc.logout()
   }

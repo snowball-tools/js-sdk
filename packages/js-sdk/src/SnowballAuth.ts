@@ -33,7 +33,8 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
   }
 
   /** Attempts to load an existing user session, if one exists. */
-  abstract initUserSession(): void
+  abstract initUserSession(): Promise<void>
+  abstract logout(): Promise<void>
 
   protected async getUser() {
     if (!this.rpc.hasValidSession()) return null

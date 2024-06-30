@@ -92,7 +92,7 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     this._loadSessionSigs()
   }
 
-  initUserSession() {}
+  async initUserSession() {}
 
   async getWallet() {
     if (this.wallet) {
@@ -168,7 +168,7 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     return [(await wallet.getAddress()) as Address]
   }
 
-  logout() {
+  async logout() {
     this.setState({ name: 'init' })
     this.rpc.logout()
   }
