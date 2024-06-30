@@ -13,6 +13,9 @@ export class OkResult<T = any> {
   unwrapMaybe() {
     return this.value
   }
+  map<U>(fn: (value: T) => U): OkResult<U> {
+    return new OkResult(fn(this.value))
+  }
 }
 
 export class ErrResult<Errs = any, Meta extends ErrMeta = ErrMeta> {
@@ -28,6 +31,9 @@ export class ErrResult<Errs = any, Meta extends ErrMeta = ErrMeta> {
   }
   unwrapMaybe() {
     return undefined
+  }
+  map<U>(_fn: (value: any) => U): ErrResult<Errs, Meta> {
+    return this
   }
 }
 
