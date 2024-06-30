@@ -16,14 +16,14 @@ index af2df4f..a3e02c2 100644
   * Type bundling configuration for an API Key Viem account creation
   * @deprecated this is used only with {@link createApiKeyAccount}, a deprecated API. See {@link createAccount}.
 diff --git a/node_modules/@turnkey/viem/dist/index.js b/node_modules/@turnkey/viem/dist/index.js
-index 245c5dd..b0d6a41 100644
+index 245c5dd..bba7233 100644
 --- a/node_modules/@turnkey/viem/dist/index.js
 +++ b/node_modules/@turnkey/viem/dist/index.js
 @@ -46,6 +46,40 @@ async function createAccount(input) {
          },
      });
  }
-+async function createAccountSync(input) {
++function createAccountSync(input) {
 +    const { client, organizationId, signWith } = input;
 +    let { ethereumAddress } = input;
 +    if (!signWith) {
@@ -69,14 +69,14 @@ index 245c5dd..b0d6a41 100644
  exports.signMessage = signMessage;
  exports.signTransaction = signTransaction;
 diff --git a/node_modules/@turnkey/viem/dist/index.mjs b/node_modules/@turnkey/viem/dist/index.mjs
-index 16e8e91..bfd93cd 100644
+index 16e8e91..0f23db7 100644
 --- a/node_modules/@turnkey/viem/dist/index.mjs
 +++ b/node_modules/@turnkey/viem/dist/index.mjs
 @@ -44,6 +44,41 @@ async function createAccount(input) {
          },
      });
  }
-+async function createAccountSync(input) {
++function createAccountSync(input) {
 +    const { client, organizationId, signWith } = input;
 +    let { ethereumAddress } = input;
 +    if (!signWith) {

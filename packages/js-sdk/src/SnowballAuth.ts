@@ -4,33 +4,32 @@ import type { SnowballChain } from '@snowballtools/utils'
 
 import debug from 'debug'
 
-import { ApiValues, makeRpcClient } from './rpc-client'
+import { SnowballState, StateLoadingAttrs } from './SnowballState'
 
-type User = ApiValues['pu_whoami']
-
-export type AuthStateLoadingAttrs = {
-  /** A string describing the currently loading step, if any. */
-  loading?: { code: string; message: string }
-  /** Error details for attempting to transition from this state to the next one. */
-  error?: ErrResult<any, any>
-}
-
-export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAttrs = {}> {
+export abstract class SnowballAuth<Wallet, State extends {} & StateLoadingAttrs = {}> {
   static className: string
   abstract readonly className: string
 
   protected _chain: SnowballChain
-  protected _state = {}
+  protected _state: SnowballState<State>
   onStateChange?: (state: State) => void
 
   protected rpc: ApiClient
 
-  constructor(options: { rpc: ApiClient; chain: SnowballChain }) {
+  constructor(options: {
+    rpc: ApiClient
+    chain: SnowballChain
+    onStateChange?: (state: State) => void
+  }) {
     // Hack to initialize this.className before anything else
     ;(this as any).className = (this.constructor as any).className
     this._chain = options.chain
     this.rpc = options.rpc
+    this.onStateChange = options.onStateChange
+    this._state = this.initAuthState()
   }
+
+  abstract initAuthState(): SnowballState<State>
 
   /** Attempts to load an existing user session, if one exists. */
   abstract initUserSession(): Promise<void>
@@ -68,46 +67,36 @@ export abstract class SnowballAuth<Wallet, State extends {} & AuthStateLoadingAt
   //
   // State Management
   //
-  /** This SHOULD be overridden by subclasses for type awareness */
   get state() {
-    return this._state
+    return this._state.value
   }
 
   protected setState(newState: State) {
-    this._state = newState
-    this.onStateChange?.(newState)
+    this._state.set(newState)
   }
 
   protected setLoading(code: string, message: string) {
-    this.log(code, message)
-    this.setState({ ...this._state, loading: { code, message } } as State)
+    this._state.setLoading(code, message)
   }
 
   protected clearLoading() {
-    this.setState({ ...this._state, loading: undefined } as State)
+    this._state.clearLoading()
   }
 
   protected setError(cause: SnowballError) {
-    const error = err(cause.name, 'e-Auth.setError', { meta: { cause } })
-    this.log(error)
-    this.setState({ ...this._state, error, loading: undefined } as State)
-    return Promise.reject(error)
+    return this._state.setError(cause)
   }
 
   protected setErr<T extends ErrResult<any, any>>(error: T) {
-    this.log(error)
-    this.setState({ ...this._state, error: error as any, loading: undefined } as State)
-    return error
+    return this._state.setErr(error)
   }
 
   protected rejectErr<T extends ErrResult<any, any>>(error: T) {
-    this.log(error)
-    this.setState({ ...this._state, error: error as any, loading: undefined } as State)
-    return Promise.reject(new SnowballError(error.reason, error.code))
+    return this._state.rejectErr(error)
   }
 
   protected clearError() {
-    this.setState({ ...this._state, error: undefined } as State)
+    this._state.clearError()
   }
 
   private _logger: any

@@ -1,7 +1,5 @@
-import { MakeAuthOptions, SnowballAuth } from '@snowballtools/js-sdk'
-import { ErrsOf, err, ok } from '@snowballtools/types'
-import { ApiValues } from '@snowballtools/types'
-import { SnowballError } from '@snowballtools/types'
+import { MakeAuthOptions, SnowballAuth, SnowballState } from '@snowballtools/js-sdk'
+import { ApiValues, ErrsOf, SnowballError, err, ok } from '@snowballtools/types'
 
 import { Chain, LocalAccount, Transport, WalletClient, http } from 'viem'
 
@@ -21,7 +19,7 @@ export type EmbeddedAuthState = AuthStateLoadingAttrs &
     | { name: 'no-session'; user?: User }
     | { name: 'waiting-for-otp'; otp_uuid: string; user?: User }
     | { name: 'authenticated-no-passkey'; user: User }
-    | { name: 'wallet-ready'; user: User; wallet: Wallet; walletParams: WalletClientParams }
+    | { name: 'wallet-ready'; user: User }
   )
 
 type AuthStateLoadingAttrs = {
@@ -41,27 +39,27 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   static className = 'EmbeddedAuth' as const
   override readonly className = 'EmbeddedAuth' as const
 
-  override get state() {
-    return this._state as EmbeddedAuthState
+  protected _wallet?: {
+    client: Wallet
+    params: WalletClientParams
   }
 
   static configure(opts: EmbeddedConfigOptions) {
     return (makeOpts: MakeAuthOptions, prev?: EmbeddedAuth) => {
       const instance = new this(makeOpts, opts)
       if (prev && makeOpts.chain.vmType === prev?.chain.vmType) {
-        // Copy over state but with new chain
-        if (prev.state.name === 'wallet-ready') {
-          const walletParams = {
-            ...prev.state.walletParams,
+        // Share auth state
+        instance._state = prev._state
+
+        // Create new wallet client with new chain
+        if (prev.state.name === 'wallet-ready' && prev._wallet) {
+          const params = {
+            ...prev._wallet.params,
             chain: makeOpts.chain,
           }
-          const wallet = makeWalletClient(walletParams)
-          instance.setState({ ...prev.state, walletParams, wallet })
-        } else {
-          instance.setState(prev.state)
+          const client = makeWalletClient(params)
+          instance._wallet = { client, params }
         }
-      } else if (prev) {
-        // TODO: Handle switching to different types of chains (e.g. EVM -> Solana)
       }
       return instance
     }
@@ -73,7 +71,13 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   ) {
     super(makeOpts)
     this.log('init')
-    this._state = { name: 'initializing' }
+  }
+
+  initAuthState() {
+    return new SnowballState(
+      { name: 'initializing' },
+      { debugLabel: 'emb-state', onStateChange: this.onStateChange },
+    )
   }
 
   async initUserSession() {
@@ -196,8 +200,8 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
   }
 
   async getWallet() {
-    if (this.state.name === 'wallet-ready') {
-      return this.state.wallet
+    if (this.state.name === 'wallet-ready' && this._wallet) {
+      return this._wallet.client
     }
     if (!('user' in this.state) || !this.state.user) {
       return this.setError(
@@ -233,12 +237,13 @@ export class EmbeddedAuth extends SnowballAuth<Wallet, EmbeddedAuthState> {
 
     this.setLoading('emb:makeWalletClient', 'Constructing wallet')
     const wallet = makeWalletClient(walletParams)
-    this.setState({ name: 'wallet-ready', user, wallet, walletParams })
+    this.setState({ name: 'wallet-ready', user })
+    this._wallet = { client: wallet, params: walletParams }
     return wallet
   }
 
   get wallet() {
-    return this.state.name === 'wallet-ready' ? this.state.wallet : null
+    return this.state.name === 'wallet-ready' && this._wallet ? this._wallet.client : null
   }
 
   async getWalletAddresses() {

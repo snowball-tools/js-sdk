@@ -1,4 +1,4 @@
-import { AuthStateLoadingAttrs, SnowballAuth } from '@snowballtools/js-sdk'
+import { SnowballAuth, SnowballState, StateLoadingAttrs } from '@snowballtools/js-sdk'
 import { SnowballError } from '@snowballtools/types'
 import { Address } from '@snowballtools/types'
 
@@ -19,7 +19,7 @@ type SessionSigsRecord = {
 }
 const RECORD_VERSION = 1
 
-export type LitAuthState = AuthStateLoadingAttrs &
+export type LitAuthState = StateLoadingAttrs &
   (
     | { name: 'init' }
     | { name: 'authenticated'; authMethod: AuthMethod; pkps: IRelayPKP[] }
@@ -41,10 +41,6 @@ export type LitConfigOptions = {
 }
 
 export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitAuthState> {
-  override get state() {
-    return this._state as LitAuthState
-  }
-
   protected litRpcUrl?: string
   protected litNetwork: LIT_NETWORKS_KEYS
   protected litNodeClient: LitNodeClient
@@ -58,13 +54,11 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
 
   constructor(makeOpts: MakeAuthOptions, opts: LitConfigOptions) {
     // TODO: Handle different chains for storageKey (e.g. solana)
-    super({ ...makeOpts, storageKey: SnowballLitAuth.STORAGE_KEY })
+    super({ ...makeOpts })
 
     this.log('init')
 
     this.sessionExpSeconds = opts.sessionExpirationInSeconds || ONE_DAY_SECONDS
-
-    this._state = { name: 'init' }
 
     if (!opts.litRelayApiKey) {
       throw new SnowballError(
@@ -90,6 +84,13 @@ export abstract class SnowballLitAuth extends SnowballAuth<PKPEthersWallet, LitA
     })
 
     this._loadSessionSigs()
+  }
+
+  initAuthState() {
+    return new SnowballState(
+      { name: 'init' },
+      { debugLabel: 'lit-auth-state', onStateChange: this.onStateChange },
+    )
   }
 
   async initUserSession() {}

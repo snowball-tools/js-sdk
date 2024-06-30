@@ -30,6 +30,7 @@ export type SnowballInitStatus =
 export type MakeAuthOptions = {
   rpc: ApiClient
   chain: SnowballChain
+  onStateChange?: (state: any) => void
 }
 
 type AuthTypes = Record<string, SnowballAuth<any, any>>
@@ -46,10 +47,11 @@ type CreateOpts = {
 }
 
 export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> {
-  private chainEntries = new Map<
-    number,
-    { chain: SnowballChain; auths: Auths; smartWallets: Record<string, SmartWallet> }
-  >()
+  private chainEntry: {
+    chain: SnowballChain
+    auths: Auths
+    smartWallets: Record<string, SmartWallet>
+  }
   private currentChainId!: number
 
   private pubsub = makePubSub()
@@ -109,7 +111,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
       Snowball.STORAGE_KEY,
     )
 
-    this.switchChain(this.opts.chain)
+    this.chainEntry = this._switchChain(this.opts.chain)
   }
 
   get chain() {
@@ -125,14 +127,13 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   }
 
   private _getCurrentChainEntry() {
-    const entry = this.chainEntries.get(this.currentChainId)
-    if (!entry) {
+    if (!this.chainEntry) {
       throw new SnowballError(
         'missing.chain',
         'Chain not initialized (did Snowball.withAuth() throw an error?)',
       )
     }
-    return entry
+    return this.chainEntry
   }
 
   /**
@@ -160,26 +161,28 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   }
 
   switchChain(chain: SnowballChain) {
-    if (!this.chainEntries.has(chain.chainId)) {
-      try {
-        let current = this.chainEntries.get(this.currentChainId)
-        let auths: Auths = {} as Auths
-        for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
-          const makeOpts = { chain, rpc: this.rpc }
-          const auth = makeAuth(makeOpts, current?.auths[authName])
-          if (this.canInitUserSessions) {
-            auth.initUserSession()
-          }
-          auth.onStateChange = () => this.pubsub.publish()
-          auths[authName as keyof Auths] = auth
+    this._switchChain(chain)
+  }
+
+  private _switchChain(chain: SnowballChain) {
+    try {
+      let current = this.chainEntry
+      let auths: Auths = {} as Auths
+      for (let [authName, makeAuth] of objectEntries(this.opts.makeAuth)) {
+        const makeOpts = { chain, rpc: this.rpc, onStateChange: () => this.pubsub.publish() }
+        const auth = makeAuth(makeOpts, current?.auths[authName])
+        if (this.canInitUserSessions) {
+          auth.initUserSession()
         }
-        this.chainEntries.set(chain.chainId, { auths, chain, smartWallets: {} })
-      } catch (error) {
-        return Promise.reject(SnowballError.make('chain.switch', 'Error switching chain', error))
+        auths[authName as keyof Auths] = auth
       }
+      this.chainEntry = { auths, chain, smartWallets: {} }
+    } catch (error) {
+      throw SnowballError.make('chain.switch', 'Error switching chain', error)
     }
     this.currentChainId = chain.chainId
     this.pubsub.publish()
+    return this.chainEntry
   }
 
   async getSmartWallet(authName: keyof Auths): Promise<SmartWallet> {
