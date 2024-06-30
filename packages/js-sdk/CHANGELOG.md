@@ -1,5 +1,13 @@
 # @snowballtools/js-sdk
 
+## 0.4.1
+
+### Patch Changes
+
+- Fix logout bug
+- Updated dependencies
+  - @snowballtools/types@0.3.2
+
 ## 0.4.0
 
 ### Minor Changes
