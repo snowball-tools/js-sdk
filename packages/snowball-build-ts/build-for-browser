@@ -53,7 +53,10 @@ esbuild.build({
     'process.env.NODE_ENV': '"production"',
     'global': 'globalThis',
   },
-  external: exclusions, // Use exclusions for the external option
+  external: [
+    ...exclusions, // Use exclusions for the external option
+    ...(packageJson.peerDependencies ? Object.keys(packageJson.peerDependencies) : []),
+  ],
   plugins: [aliasPlugin], // Use the alias plugin
   inject: browserShimsExists ? [browserShimsPath] : [],
 
