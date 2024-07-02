@@ -21,7 +21,9 @@
   "type": "module",
   "files": [
     "dist/**/*",
-    "src/**/*"
+    "src/**/*",
+    "api.js",
+    "result.js"
   ],
   "main": "./dist/index.js",
   "exports": {
