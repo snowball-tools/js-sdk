@@ -1,92 +1,4 @@
-import { SnowballChain } from '@snowballtools/js-sdk'
-
-import { TurnkeyClient, getWebAuthnAssertion } from '@turnkey/http'
-import { Turnkey, WebauthnStamper } from '@turnkey/sdk-browser'
-import { createAccountSync } from '@turnkey/viem'
-import { Transport, createWalletClient } from 'viem'
-
-/**
- * Trigger the webauthn "create" ceremony.
- */
-type AttestParams = {
-  name: string
-  orgId: string
-  rpId: string
-  apiBaseUrl: string
-  serverSignUrl?: string
-}
-export async function turnkeyAttestPasskey(params: AttestParams) {
-  const turnkey = new Turnkey({
-    rpId: params.rpId,
-    apiBaseUrl: params.apiBaseUrl,
-    defaultOrganizationId: params.orgId,
-    serverSignUrl: params.serverSignUrl,
-  })
-  const passkeyClient = turnkey.passkeyClient()
-
-  const credential = await passkeyClient.createUserPasskey({
-    publicKey: {
-      user: {
-        name: params.name,
-        displayName: `${params.name} (${renderTimestamp()})`,
-      },
-    },
-  })
-
-  return { credential }
-}
-
-type LoginParams = {
-  challenge: string
-}
-export async function assertLogin({ challenge }: LoginParams) {
-  return JSON.parse(await getWebAuthnAssertion(challenge)) as {
-    authenticatorData: string
-    clientDataJson: string
-    credentialId: string
-    signature: string
-  }
-}
-
-export type WalletClientParams = {
-  rpId: string
-  chain: SnowballChain
-  baseUrl: string
-  transport: Transport
-  credentialIds: string[]
-  walletAddress: string
-  organizationId: string
-}
-export function makeWalletClient(params: WalletClientParams) {
-  const httpClient = new TurnkeyClient(
-    {
-      baseUrl: params.baseUrl, // "https://api.turnkey.com",
-    },
-    new WebauthnStamper({
-      rpId: params.rpId,
-      allowCredentials: params.credentialIds.map((credentialId) => ({
-        id: base64UrlDecode(credentialId),
-        type: 'public-key',
-      })),
-    }),
-  )
-
-  // Create the Viem custom account
-  const turnkeyAccount = createAccountSync({
-    client: httpClient,
-    organizationId: params.organizationId,
-    signWith: params.walletAddress,
-  })
-
-  const wallet = createWalletClient({
-    account: turnkeyAccount,
-    chain: params.chain.toViemChain(),
-    transport: params.transport,
-  })
-  return wallet
-}
-
-function base64UrlDecode(base64Url: string): ArrayBuffer {
+export function base64UrlDecode(base64Url: string): ArrayBuffer {
   // Convert base64url to base64 by replacing characters
   const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/')
 
@@ -108,7 +20,7 @@ function base64UrlDecode(base64Url: string): ArrayBuffer {
 
 const MONTHS = 'Jan Feb Mar Apr May Jun Jul Aug Sep Oct Nov Dec'.split(' ')
 
-function renderTimestamp() {
+export function renderTimestamp() {
   const date = new Date()
   const month = MONTHS[date.getMonth()]
   const day = date.getDate()
