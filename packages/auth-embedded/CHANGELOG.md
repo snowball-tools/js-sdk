@@ -1,5 +1,11 @@
 # @snowballtools/auth-lit
 
+## 0.4.2
+
+### Patch Changes
+
+- Export base class
+
 ## 0.4.1
 
 ### Patch Changes
