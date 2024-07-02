@@ -1,6 +1,5 @@
 import { ErrResult, SnowballError, err } from '@snowballtools/types'
-
-import debug from 'debug'
+import { logBase } from '@snowballtools/utils'
 
 export type StateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
@@ -55,7 +54,7 @@ export class SnowballState<T> {
   private _logger: any
   protected log(...args: any[]) {
     if (!this._logger) {
-      this._logger = debug(`snowball:${this.options.debugLabel}`)
+      this._logger = logBase.extend(this.options.debugLabel)
     }
     this._logger(...args)
   }

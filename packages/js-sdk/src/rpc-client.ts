@@ -1,6 +1,5 @@
 import { ApiClient, ErrResult, OkResult } from '@snowballtools/types'
-
-import debug from 'debug'
+import { logBase } from '@snowballtools/utils'
 
 import { consoleLogError } from './errors'
 
@@ -9,7 +8,7 @@ export * from '@snowballtools/types/result'
 
 export type Unexpected = ErrResult<'unexpected'>
 
-const log = debug('snowball:rpc')
+const log = logBase.extend('rpc')
 
 // Pretend return value rpc is a ProcCtx to alleviate type errors
 // Therefore DO NOT try to access e.g. client.user, because those fields won't be there!

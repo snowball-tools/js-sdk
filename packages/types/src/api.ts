@@ -1,4 +1,4 @@
-import { OkResult, ErrResult, ErrMeta } from './result'
+import type { OkResult, ErrResult, ErrMeta } from './result'
 
 export type ApiRpcs = {
   sendOtp: (params: { auth: { value: string; type: "email"; }; }) => Promise<ErrResult<"unexpected"> | ErrResult<"unsupported_auth_type"> | ErrResult<"send_failed"> | ErrResult<"too_many_codes", { minutesLeft: number; }> | OkResult<{ uuid: string; }>>

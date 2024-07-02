@@ -14,7 +14,6 @@
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
-		"@snowballtools/auth": "*",
 		"@snowballtools/types": "*",
 		"@snowballtools/utils": "*"
 	},

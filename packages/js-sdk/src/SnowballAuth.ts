@@ -1,8 +1,6 @@
 import { ErrResult, err } from '@snowballtools/types'
 import { Address, ApiClient, SnowballError } from '@snowballtools/types'
-import type { SnowballChain } from '@snowballtools/utils'
-
-import debug from 'debug'
+import { type SnowballChain, logBase } from '@snowballtools/utils'
 
 import { SnowballState, StateLoadingAttrs } from './SnowballState'
 
@@ -102,7 +100,7 @@ export abstract class SnowballAuth<Wallet, State extends {} & StateLoadingAttrs 
   private _logger: any
   protected log(...args: any[]) {
     if (!this._logger) {
-      this._logger = debug(`snowball:${this.className}`)
+      this._logger = logBase.extend(this.className)
     }
     this._logger(...args)
   }
