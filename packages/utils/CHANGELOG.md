@@ -1,5 +1,11 @@
 # @snowballtools/utils
 
+## 0.4.1
+
+### Patch Changes
+
+- Refactor base class location
+
 ## 0.4.0
 
 ### Minor Changes

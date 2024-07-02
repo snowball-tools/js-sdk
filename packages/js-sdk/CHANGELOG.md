@@ -1,5 +1,13 @@
 # @snowballtools/js-sdk
 
+## 0.4.2
+
+### Patch Changes
+
+- Refactor base class location
+- Updated dependencies
+  - @snowballtools/utils@0.4.1
+
 ## 0.4.1
 
 ### Patch Changes

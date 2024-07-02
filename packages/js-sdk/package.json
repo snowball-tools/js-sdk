@@ -1,6 +1,6 @@
 {
 	"name": "@snowballtools/js-sdk",
-	"version": "0.4.1",
+	"version": "0.4.2",
 	"description": "snowballtools sdk",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",

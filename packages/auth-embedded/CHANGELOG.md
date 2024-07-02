@@ -1,5 +1,13 @@
 # @snowballtools/auth-lit
 
+## 0.4.3
+
+### Patch Changes
+
+- Refactor base class location
+- Updated dependencies
+  - @snowballtools/js-sdk@0.4.2
+
 ## 0.4.2
 
 ### Patch Changes
