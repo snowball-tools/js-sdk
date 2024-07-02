@@ -43,9 +43,11 @@ export async function assertLogin({ challenge, rpId, credentialIds }: LoginParam
       id: credentialId,
       type: 'public-key',
   }))});
-  return await stamper.stamp(challenge) as {
-    stampHeaderName: string;
-    stampHeaderValue: string;
+  return JSON.parse((await stamper.stamp(challenge)).stampHeaderValue) as {
+    authenticatorData: string
+    clientDataJson: string
+    credentialId: string
+    signature: string
   }
 }
 
