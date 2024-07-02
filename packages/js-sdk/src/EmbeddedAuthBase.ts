@@ -1,7 +1,11 @@
-import { MakeAuthOptions, SnowballAuth, SnowballChain, SnowballState } from '@snowballtools/js-sdk'
 import { ApiValues, ErrsOf, SnowballError, err, ok } from '@snowballtools/types'
+import { SnowballChain } from '@snowballtools/utils'
 
 import { Chain, LocalAccount, Transport, WalletClient, http } from 'viem'
+
+import { MakeAuthOptions } from './Snowball'
+import { SnowballAuth } from './SnowballAuth'
+import { SnowballState } from './SnowballState'
 
 type User = ApiValues['pu_whoami']
 
@@ -31,7 +35,7 @@ export type EmbeddedConfigOptions = {
   auth: Partial<EmbeddedAuthMethodConfig>
 }
 
-export type WalletClientParams = {
+export type EmbeddedWalletClientParams = {
   rpId: string
   chain: SnowballChain
   baseUrl: string
@@ -41,24 +45,24 @@ export type WalletClientParams = {
   organizationId: string
 }
 
-export type LoginParams = {
+export type EmbeddedLoginParams = {
   challenge: string
 }
-export type LoginPayload = {
+export type EmbeddedLoginPayload = {
   authenticatorData: string
   clientDataJson: string
   credentialId: string
   signature: string
 }
 
-export type AttestParams = {
+export type EmbeddedAttestParams = {
   name: string
   orgId: string
   rpId: string
   apiBaseUrl: string
   serverSignUrl?: string
 }
-export type AttestPayload = {
+export type EmbeddedAttestPayload = {
   credential: {
     encodedChallenge: string
     attestation: {
@@ -79,13 +83,13 @@ export type AttestPayload = {
 interface Wallet extends WalletClient<Transport, Chain, LocalAccount> {}
 
 export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuthState> {
-  protected abstract attestPasskey(params: AttestParams): Promise<AttestPayload>
-  protected abstract assertLogin(params: LoginParams): Promise<LoginPayload>
-  protected abstract makeWalletClient(params: WalletClientParams): Wallet
+  protected abstract attestPasskey(params: EmbeddedAttestParams): Promise<EmbeddedAttestPayload>
+  protected abstract assertLogin(params: EmbeddedLoginParams): Promise<EmbeddedLoginPayload>
+  protected abstract makeWalletClient(params: EmbeddedWalletClientParams): Wallet
 
   protected _wallet?: {
     client: Wallet
-    params: WalletClientParams
+    params: EmbeddedWalletClientParams
   }
 
   constructor(

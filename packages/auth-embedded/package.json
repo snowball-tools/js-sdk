@@ -20,7 +20,9 @@
 		"@snowballtools/js-sdk": "*",
 		"@snowballtools/types": "*",
 		"@turnkey/sdk-browser": "^0.4.1",
-		"@turnkey/viem": "^0.4.21"
+		"@turnkey/viem": "^0.4.21",
+		"crypto-browserify": "^3.12.0",
+		"stream-browserify": "^3.0.0"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",
@@ -28,6 +30,10 @@
 	},
 	"peerDependencies": {
 		"viem": "2.x"
+	},
+	"browserMappings": {
+		"crypto": "crypto-browserify",
+		"stream": "stream-browserify"
 	},
 	"repository": "https://github.com/snowball-tools/snowball-ts-sdk",
 	"author": "Snowball Tools Inc.",

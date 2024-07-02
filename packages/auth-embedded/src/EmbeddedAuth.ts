@@ -1,19 +1,19 @@
-import { MakeAuthOptions } from '@snowballtools/js-sdk'
+import {
+  EmbeddedAttestParams,
+  EmbeddedAuthBase,
+  EmbeddedConfigOptions,
+  EmbeddedLoginParams,
+  EmbeddedLoginPayload,
+  EmbeddedWalletClientParams,
+  MakeAuthOptions,
+} from '@snowballtools/js-sdk'
 
 import { TurnkeyClient, getWebAuthnAssertion } from '@turnkey/http'
 import { Turnkey, WebauthnStamper } from '@turnkey/sdk-browser'
 import { createAccountSync } from '@turnkey/viem'
 import { createWalletClient } from 'viem'
 
-import {
-  AttestParams,
-  EmbeddedAuthBase,
-  EmbeddedConfigOptions,
-  LoginParams,
-  LoginPayload,
-  WalletClientParams,
-} from './EmbeddedAuthBase'
-import { base64UrlDecode, renderTimestamp } from './helpers'
+import { base64UrlDecode, renderTimestamp } from '../../utils/src'
 
 export class EmbeddedAuth extends EmbeddedAuthBase {
   static className = 'EmbeddedAuth' as const
@@ -40,7 +40,7 @@ export class EmbeddedAuth extends EmbeddedAuthBase {
     }
   }
 
-  makeWalletClient(params: WalletClientParams) {
+  makeWalletClient(params: EmbeddedWalletClientParams) {
     const httpClient = new TurnkeyClient(
       {
         baseUrl: params.baseUrl, // "https://api.turnkey.com",
@@ -69,11 +69,11 @@ export class EmbeddedAuth extends EmbeddedAuthBase {
     return wallet
   }
 
-  async assertLogin({ challenge }: LoginParams) {
-    return JSON.parse(await getWebAuthnAssertion(challenge)) as LoginPayload
+  async assertLogin({ challenge }: EmbeddedLoginParams) {
+    return JSON.parse(await getWebAuthnAssertion(challenge)) as EmbeddedLoginPayload
   }
 
-  async attestPasskey(params: AttestParams) {
+  async attestPasskey(params: EmbeddedAttestParams) {
     const turnkey = new Turnkey({
       rpId: params.rpId,
       apiBaseUrl: params.apiBaseUrl,
