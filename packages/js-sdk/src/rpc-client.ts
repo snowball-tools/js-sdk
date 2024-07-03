@@ -3,8 +3,7 @@ import { logBase } from '@snowballtools/utils'
 
 import { consoleLogError } from './errors'
 
-export * from '@snowballtools/types/api'
-export * from '@snowballtools/types/result'
+export * from '@snowballtools/types'
 
 export type Unexpected = ErrResult<'unexpected'>
 
