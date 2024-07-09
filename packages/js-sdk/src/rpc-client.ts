@@ -1,6 +1,7 @@
 import { ApiClient, ErrResult, OkResult } from '@snowballtools/types'
 import { logBase } from '@snowballtools/utils'
 
+import { BrowserLocalStorage, LocalStorage } from './LocalStorage'
 import { consoleLogError } from './errors'
 
 export * from '@snowballtools/types'
@@ -11,10 +12,15 @@ const log = logBase.extend('rpc')
 
 // Pretend return value rpc is a ProcCtx to alleviate type errors
 // Therefore DO NOT try to access e.g. client.user, because those fields won't be there!
-export function makeRpcClient(apiKey: string, apiUrl: string, sessionKey: string): ApiClient {
+export function makeRpcClient(
+  apiKey: string,
+  apiUrl: string,
+  sessionKey: string,
+  storage: LocalStorage = new BrowserLocalStorage(),
+): ApiClient {
   let session: { token: string; expiresAt: number; refreshToken: string } | undefined
   try {
-    const sess = JSON.parse(localStorage.getItem(sessionKey) || 'null') || undefined
+    const sess = JSON.parse(storage.getItem(sessionKey) || 'null') || undefined
     if (sess && sess.expiresAt > Date.now()) {
       session = sess
       log('Found existing session')
@@ -30,7 +36,7 @@ export function makeRpcClient(apiKey: string, apiUrl: string, sessionKey: string
 
   function logout() {
     session = undefined
-    localStorage.removeItem(sessionKey)
+    storage.removeItem(sessionKey)
   }
   function hasValidSession() {
     return getSessionExpirationTime() > Date.now()
@@ -91,7 +97,7 @@ export function makeRpcClient(apiKey: string, apiUrl: string, sessionKey: string
           } else if (res.status === 200 && body.value.newSession) {
             // Auto-detect new sessions
             session = body.value.newSession
-            localStorage.setItem(sessionKey, JSON.stringify(session))
+            storage.setItem(sessionKey, JSON.stringify(session))
           }
           // Wrap in instance of Result
           return body.ok
