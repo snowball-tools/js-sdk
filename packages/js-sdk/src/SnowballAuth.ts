@@ -73,6 +73,14 @@ export abstract class SnowballAuth<Wallet, State extends {} & StateLoadingAttrs 
     this._state.set(newState)
   }
 
+  protected setStateStillLoading(newState: State) {
+    this._state.set({
+      ...newState,
+      loading: this._state.value.loading,
+      error: this._state.value.error,
+    })
+  }
+
   protected setLoading(code: string, message: string) {
     this._state.setLoading(code, message)
   }

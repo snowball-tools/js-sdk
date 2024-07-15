@@ -116,7 +116,7 @@ export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuth
 
     if (user.wallets.length) {
       this.setLoading('emb:initWallet', 'Initializing wallet')
-      this.setState({ name: 'initializing', user })
+      this.setStateStillLoading({ name: 'initializing', user })
       await this.getWallet()
     } else {
       // [ASSUMPTION]: If user has no wallets, then they must not have a passkey
@@ -220,7 +220,7 @@ export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuth
     })
     if (!connect.ok) return this.setErr(connect)
 
-    this.setState({ name: 'authenticated-no-passkey', user: connect.value.user })
+    this.setStateStillLoading({ name: 'authenticated-no-passkey', user: connect.value.user })
     await this.getWallet()
 
     return ok({})
@@ -264,8 +264,8 @@ export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuth
 
     this.setLoading('emb:makeWalletClient', 'Constructing wallet')
     const wallet = this.makeWalletClient(walletParams)
-    this.setState({ name: 'wallet-ready', user })
     this._wallet = { client: wallet, params: walletParams }
+    this.setState({ name: 'wallet-ready', user })
     return wallet
   }
 
