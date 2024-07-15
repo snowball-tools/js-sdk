@@ -1,4 +1,5 @@
 /* eslint-env browser */
+import ms_lib from 'ms';
 
 /**
  * This is the web browser implementation of `debug()`.
@@ -276,7 +277,7 @@ function setup(env) {
 	createDebug.disable = disable;
 	createDebug.enable = enable;
 	createDebug.enabled = enabled;
-	createDebug.humanize = require('ms');
+	createDebug.humanize = ms_lib;
 	createDebug.destroy = destroy;
 
 	Object.keys(env).forEach(key => {
