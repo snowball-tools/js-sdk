@@ -1,4 +1,4 @@
-import debug from 'debug'
+import debug from './debug'
 
 export { DEFAULT_EXP } from './constants'
 export { SnowballChain } from './SnowballChain'

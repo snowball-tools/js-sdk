@@ -3,6 +3,7 @@ import { SnowballError } from '@snowballtools/types'
 import { ApiClient } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
+import { LocalStorage } from './LocalStorage'
 import { SnowballSmartWallet } from './SmartWallet'
 import { SnowballAuth } from './SnowballAuth'
 import { makePubSub } from './pubsub'
@@ -20,6 +21,7 @@ export type SnowballOptions<Auths extends AuthTypes, SmartWallet extends Snowbal
     chain: SnowballChain,
     wallet: Ret<Auths[keyof Auths]['getWallet']>,
   ) => SmartWallet | Promise<SmartWallet>
+  storage?: LocalStorage
 }
 
 export type SnowballInitStatus =
@@ -44,6 +46,7 @@ type CreateOpts = {
   apiUrl?: string
   ssrMode?: boolean
   initialChain: SnowballChain
+  storage?: LocalStorage
 }
 
 export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmartWallet> {
@@ -79,6 +82,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
           makeSmartWallet: async () => {
             throw new SnowballError('missing.smartWallet', 'No SmartWallet provided')
           },
+          storage: opts.storage,
         })
       },
       withSmartWallet<SW extends SnowballSmartWallet>(
@@ -94,6 +98,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
               chain: initialChain,
               makeAuth,
               makeSmartWallet,
+              storage: opts.storage,
             })
           },
         }
@@ -109,6 +114,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
       opts.apiKey,
       opts.apiUrl || 'https://api.snowball.build/v1',
       Snowball.STORAGE_KEY,
+      opts.storage,
     )
 
     this.chainEntry = this._switchChain(this.opts.chain)

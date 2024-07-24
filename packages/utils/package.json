@@ -17,11 +17,10 @@
 		"@alchemy/aa-core": "^3.6.1",
 		"@snowballtools/types": "*",
 		"alchemy-sdk": "^3.2.0",
-		"debug": "*",
+		"ms": "*",
 		"viem": "2.x"
 	},
 	"devDependencies": {
-		"@types/debug": "*",
 		"@internal/snowball-build-ts": "*",
 		"@internal/typescript-config": "*"
 	},
