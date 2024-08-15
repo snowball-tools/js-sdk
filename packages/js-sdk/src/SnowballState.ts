@@ -1,5 +1,8 @@
 import { ErrResult, SnowballError, err } from '@snowballtools/types'
 import { logBase } from '@snowballtools/utils'
+import type { Debugger } from '@snowballtools/utils'
+
+import { getErrorChain } from './errors'
 
 export type StateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
@@ -30,7 +33,11 @@ export class SnowballState<T> {
 
   setError(cause: SnowballError) {
     const error = err(cause.name, 'e-Auth.setError', { meta: { cause } })
-    this.log(error)
+    if (this.logger.enabled) {
+      console.error(this.logger.namespace, ...getErrorChain(cause))
+    } else {
+      this.log(...getErrorChain(cause))
+    }
     this.set({ ...this.value, error, loading: undefined })
     return Promise.reject(error)
   }
@@ -51,11 +58,15 @@ export class SnowballState<T> {
     this.set({ ...this.value, error: undefined })
   }
 
-  private _logger: any
-  protected log(...args: any[]) {
+  private _logger?: Debugger
+  protected get logger() {
     if (!this._logger) {
       this._logger = logBase.extend(this.options.debugLabel)
     }
-    this._logger(...args)
+    return this._logger
+  }
+  protected log(...args: any[]) {
+    // @ts-expect-error
+    this.logger(...args)
   }
 }

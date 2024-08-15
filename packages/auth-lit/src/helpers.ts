@@ -1,6 +1,6 @@
 import { DEFAULT_EXP, SnowballChain } from '@snowballtools/utils'
 
-import { LitAbility, LitPKPResource } from '@lit-protocol/auth-helpers'
+import { LitAbility, LitActionResource, LitPKPResource } from '@lit-protocol/auth-helpers'
 import { AuthMethodScope } from '@lit-protocol/constants'
 import { LitNodeClient } from '@lit-protocol/lit-node-client'
 import { AuthMethod, IRelayPKP, SessionSigsMap } from '@lit-protocol/types'
@@ -65,34 +65,6 @@ export async function getSessionSigs({
   switchChain?: boolean
   litNodeClient: LitNodeClient
 }): Promise<SessionSigsMap> {
-  // return await provider.getSessionSigs({
-  //   pkpPublicKey,
-  //   authMethod: auth,
-  //   sessionSigsParams: {
-  //     chain: chain.name.toLowerCase(),
-  //     expiration,
-  //     switchChain,
-  //     resourceAbilityRequests: [
-  //       {
-  //         resource: new LitActionResource('*'),
-  //         ability: LitAbility.PKPSigning,
-  //       },
-  //     ],
-
-  //     // Types now require this in v6
-  //     async authNeededCallback(params) {
-  //       const response = await litNodeClient.signSessionKey({
-  //         statement: params.statement,
-  //         authMethods: [auth],
-  //         pkpPublicKey: pkpPublicKey,
-  //         expiration: params.expiration,
-  //         resources: params.resources,
-  //         chainId: 1,
-  //       })
-  //       return response.authSig
-  //     },
-  //   },
-  // })
   await litNodeClient.getLatestBlockhash()
   return await litNodeClient.getPkpSessionSigs({
     pkpPublicKey,
@@ -104,6 +76,10 @@ export async function getSessionSigs({
       {
         resource: new LitPKPResource('*'),
         ability: LitAbility.PKPSigning,
+      },
+      {
+        resource: new LitActionResource('*'),
+        ability: LitAbility.LitActionExecution,
       },
     ],
   })

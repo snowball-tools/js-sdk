@@ -53,7 +53,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   private chainEntry: {
     chain: SnowballChain
     auths: Auths
-    smartWallets: Record<string, SmartWallet>
+    smartWallets: Partial<Record<keyof Auths, SmartWallet>>
   }
   private currentChainId!: number
 
@@ -145,7 +145,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
   /**
    * Returns an auth with an active session.
    *
-   * If multiple auths have active sessions, the one with the most distance expiration time is returned.
+   * If multiple auths have active sessions, the one with the most distant expiration time is returned.
    */
   get session(): Auths[keyof Auths] | null {
     const validSessions = ([...Object.values(this.auth)] as any as SnowballAuth<unknown>[])
@@ -193,14 +193,14 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
 
   async getSmartWallet(authName: keyof Auths): Promise<SmartWallet> {
     const entry = this._getCurrentChainEntry()
-    let wallet = entry.smartWallets[authName as string]
+    let wallet = entry.smartWallets[authName]
     if (!wallet) {
-      wallet = entry.smartWallets[authName as string] = await this.opts.makeSmartWallet(
+      wallet = entry.smartWallets[authName] = await this.opts.makeSmartWallet(
         entry.chain,
         await entry.auths[authName]!.getWallet(),
       )
     }
-    return wallet
+    return wallet!
   }
 
   async getSmartWalletAddress(authName: keyof Auths): Promise<Address> {

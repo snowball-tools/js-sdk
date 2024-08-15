@@ -40,6 +40,10 @@ export class AlchemySmartWalletLight {
     private apiKeys: ApiKeys,
   ) {}
 
+  get address(): Address | undefined {
+    return this.client.account?.address
+  }
+
   async getAddress(): Promise<Address> {
     // TODO: Types are requiring an account field, but runtime does not
     //@ts-ignore

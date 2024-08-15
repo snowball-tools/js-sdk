@@ -1,7 +1,7 @@
 import { SnowballError } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
-import { ProviderType } from '@lit-protocol/constants'
+import { AuthMethodScope, ProviderType } from '@lit-protocol/constants'
 import type { IRelayPollStatusResponse } from '@lit-protocol/types'
 
 import { MakeAuthOptions } from '../../js-sdk/src'
@@ -26,7 +26,7 @@ export class LitPasskeyAuth extends SnowballLitAuth {
   }
 
   async register(username: string) {
-    if (this.state.name !== 'init') {
+    if (this.state.name !== 'init' && this.state.name !== 'no-session') {
       this.log(`no-op: register() while in state '${this.state.name}'`)
       return
     }
@@ -42,7 +42,10 @@ export class LitPasskeyAuth extends SnowballLitAuth {
 
     try {
       this.setLoading('mintPKP', 'Verifying and minting PKP')
-      var txHash = await this.provider.verifyAndMintPKPThroughRelayer(options)
+      var txHash = await this.provider.verifyAndMintPKPThroughRelayer(options, {
+        // <https://developer.litprotocol.com/v3/sdk/wallets/auth-methods/#auth-method-scopes>
+        permittedAuthMethodScopes: [[AuthMethodScope.SignAnything]],
+      })
     } catch (err) {
       return this.setError(makeError(1, err))
     }
@@ -67,7 +70,7 @@ export class LitPasskeyAuth extends SnowballLitAuth {
   }
 
   async authenticate(): Promise<void> {
-    if (this.state.name !== 'init') {
+    if (this.state.name !== 'init' && this.state.name !== 'no-session') {
       this.log(`no-op: authenticate() while in state '${this.state.name}'`)
       return
     }
