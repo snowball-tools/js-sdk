@@ -1,5 +1,17 @@
 # @snowballtools/auth-lit
 
+## 0.5.0
+
+### Minor Changes
+
+- Upgrade Lit version
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/js-sdk@0.5.0
+  - @snowballtools/types@0.4.0
+
 ## 0.4.3
 
 ### Patch Changes

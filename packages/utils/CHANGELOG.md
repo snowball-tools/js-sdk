@@ -1,5 +1,16 @@
 # @snowballtools/utils
 
+## 0.5.0
+
+### Minor Changes
+
+- Upgrade Lit version
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/types@0.4.0
+
 ## 0.4.1
 
 ### Patch Changes

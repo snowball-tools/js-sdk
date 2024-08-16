@@ -1,5 +1,17 @@
 # @snowballtools/js-sdk
 
+## 0.5.0
+
+### Minor Changes
+
+- Upgrade Lit version
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/types@0.5.0
+  - @snowballtools/utils@0.5.0
+
 ## 0.4.2
 
 ### Patch Changes
