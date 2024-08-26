@@ -21,7 +21,7 @@
 		"@snowballtools/types": "*",
 		"@snowballtools/utils": "*",
 		"ethers": "^6.11.1",
-		"viem": "2.x"
+		"viem": "2.8.6"
 	},
 	"devDependencies": {
 		"@internal/snowball-build-ts": "*",

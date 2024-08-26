@@ -11,11 +11,14 @@ import {
 import { TurnkeyClient, getWebAuthnAssertion } from '@turnkey/http'
 import { Turnkey, WebauthnStamper } from '@turnkey/sdk-browser'
 import { createAccountSync } from '@turnkey/viem'
-import { createWalletClient } from 'viem'
+import { createWalletClient, http } from 'viem'
+import type { Chain, LocalAccount, Transport, WalletClient } from 'viem'
 
 import { base64UrlDecode, renderTimestamp } from '../../utils/src'
 
-export class EmbeddedAuth extends EmbeddedAuthBase {
+interface Wallet extends WalletClient<Transport, Chain, LocalAccount> {}
+
+export class EmbeddedAuth extends EmbeddedAuthBase<Wallet> {
   static className = 'EmbeddedAuth' as const
   override readonly className = 'EmbeddedAuth' as const
 
@@ -64,7 +67,7 @@ export class EmbeddedAuth extends EmbeddedAuthBase {
     const wallet = createWalletClient({
       account: turnkeyAccount,
       chain: params.chain.toViemChain(),
-      transport: params.transport,
+      transport: http(params.transportUrl),
     })
     return wallet
   }

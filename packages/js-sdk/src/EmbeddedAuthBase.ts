@@ -1,8 +1,6 @@
 import { ApiValues, ErrsOf, SnowballError, err, ok } from '@snowballtools/types'
 import { SnowballChain } from '@snowballtools/utils'
 
-import { Chain, LocalAccount, Transport, WalletClient, http } from 'viem'
-
 import { MakeAuthOptions } from './Snowball'
 import { SnowballAuth } from './SnowballAuth'
 import { SnowballState } from './SnowballState'
@@ -28,7 +26,7 @@ type AuthStateLoadingAttrs = {
   /** A string describing the currently loading step, if any. */
   loading?: { code: string; message: string }
   /** Error details for attempting to transition from this state to the next one. */
-  error?: ErrsOf<EmbeddedAuthBase['sendOtp' | 'verifyOtp' | 'login' | 'createPasskey']>
+  error?: ErrsOf<EmbeddedAuthBase<any>['sendOtp' | 'verifyOtp' | 'login' | 'createPasskey']>
 }
 
 export type EmbeddedConfigOptions = {
@@ -39,7 +37,7 @@ export type EmbeddedWalletClientParams = {
   rpId: string
   chain: SnowballChain
   baseUrl: string
-  transport: Transport
+  transportUrl: string
   credentialIds: string[]
   walletAddress: string
   organizationId: string
@@ -80,9 +78,7 @@ export type EmbeddedAttestPayload = {
   }
 }
 
-interface Wallet extends WalletClient<Transport, Chain, LocalAccount> {}
-
-export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuthState> {
+export abstract class EmbeddedAuthBase<Wallet> extends SnowballAuth<Wallet, EmbeddedAuthState> {
   protected abstract attestPasskey(params: EmbeddedAttestParams): Promise<EmbeddedAttestPayload>
   protected abstract assertLogin(params: EmbeddedLoginParams): Promise<EmbeddedLoginPayload>
   protected abstract makeWalletClient(params: EmbeddedWalletClientParams): Wallet
@@ -253,13 +249,16 @@ export abstract class EmbeddedAuthBase extends SnowballAuth<Wallet, EmbeddedAuth
       credentialIds: user.passkeys.map((passkey) => passkey.credentialId),
       organizationId: walletConfig.value.organizationId,
       walletAddress: user.wallets[0]!.accounts[0]!.address,
-      transport: http(
+      transportUrl:
         provider.type === 'key-a'
-          ? this.chain.alchemyRpcUrls(provider.value)[0]
+          ? this.chain.alchemyRpcUrls(provider.value)[0] || ''
           : provider.type === 'url'
             ? provider.value
             : '',
-      ),
+    }
+
+    if (!walletParams.transportUrl) {
+      console.warn('[EmbeddedAuthBase] No transport URL found for wallet client')
     }
 
     this.setLoading('emb:makeWalletClient', 'Constructing wallet')

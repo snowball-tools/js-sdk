@@ -19,8 +19,9 @@
 	"dependencies": {
 		"@snowballtools/js-sdk": "*",
 		"@snowballtools/types": "*",
-		"@turnkey/sdk-browser": "^0.4.1",
-		"@turnkey/viem": "^0.4.21",
+		"@turnkey/sdk-browser": "1.2.3",
+		"@turnkey/http": "2.12.2",
+		"@turnkey/viem": "0.4.27",
 		"crypto-browserify": "^3.12.0",
 		"stream-browserify": "^3.0.0"
 	},
@@ -29,7 +30,7 @@
 		"@internal/typescript-config": "*"
 	},
 	"peerDependencies": {
-		"viem": "2.x"
+		"viem": "2.8.6"
 	},
 	"browserMappings": {
 		"crypto": "crypto-browserify",
