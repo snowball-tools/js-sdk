@@ -1,5 +1,5 @@
 diff --git a/node_modules/@turnkey/http/dist/index.d.ts b/node_modules/@turnkey/http/dist/index.d.ts
-index 6014c8e..acbf276 100644
+index 6014c8e..290faa7 100644
 --- a/node_modules/@turnkey/http/dist/index.d.ts
 +++ b/node_modules/@turnkey/http/dist/index.d.ts
 @@ -5,7 +5,7 @@ export { init, browserInit } from "./config";
