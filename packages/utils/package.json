@@ -1,6 +1,6 @@
 {
 	"name": "@snowballtools/utils",
-	"version": "0.5.0",
+	"version": "0.6.0",
 	"description": "aa",
 	"main": "./dist/index.js",
 	"module": "./dist/index.mjs",
@@ -14,7 +14,7 @@
 		"watch": "snowball-build-ts src/index.ts --watch"
 	},
 	"dependencies": {
-		"@alchemy/aa-core": "^3.6.1",
+		"@alchemy/aa-core": "3.12.3",
 		"@snowballtools/types": "*",
 		"alchemy-sdk": "^3.2.0",
 		"ms": "*",

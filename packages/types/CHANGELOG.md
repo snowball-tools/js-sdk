@@ -1,5 +1,11 @@
 # @snowballtools/types
 
+## 0.6.0
+
+### Minor Changes
+
+- Remove wagmi v2 from nested dependencies to avoid cjs<->esm conflicts
+
 ## 0.5.0
 
 ### Minor Changes

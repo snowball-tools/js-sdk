@@ -1,5 +1,18 @@
 # @snowballtools/link-lit-alchemy-light
 
+## 0.6.0
+
+### Minor Changes
+
+- Remove wagmi v2 from nested dependencies to avoid cjs<->esm conflicts
+
+### Patch Changes
+
+- Updated dependencies
+  - @snowballtools/smartwallet-alchemy-light@0.6.0
+  - @snowballtools/utils@0.6.0
+  - @snowballtools/types@0.6.0
+
 ## 0.5.0
 
 ### Minor Changes
