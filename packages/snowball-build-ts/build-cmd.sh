@@ -1,3 +1,3 @@
 #!/bin/bash
 
-npx tsup "$@" --dts --format esm,cjs --sourcemap
+npx tsup "$@" --dts --format esm,cjs --sourcemap --treeshake
