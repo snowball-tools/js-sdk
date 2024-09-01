@@ -1,0 +1,38 @@
+{
+	"name": "@snowballtools/react-native-auth-embedded",
+	"version": "0.4.3",
+	"description": "snowballtools react-native-auth-passkey",
+	"main": "./dist/index.js",
+	"module": "./dist/index.mjs",
+	"types": "./dist/index.d.ts",
+	"files": [
+		"dist/**/*",
+		"src/**/*"
+	],
+	"scripts": {
+		"build": "snowball-build-ts src/index.ts && snowball-build-for-browser src/index.ts",
+		"watch": "snowball-build-ts src/index.ts --watch"
+	},
+	"dependencies": {
+		"@snowballtools/js-sdk": "*",
+		"@snowballtools/types": "*",
+        "@turnkey/crypto": "^0.2.0",
+        "@turnkey/encoding": "^0.2.0",
+        "@turnkey/http": "^2.10.0",
+        "@turnkey/react-native-passkey-stamper": "^0.2.5",
+        "@turnkey/viem": "^0.4.21"
+	},
+	"devDependencies": {
+		"@internal/snowball-build-ts": "*",
+		"@internal/typescript-config": "*"
+	},
+	"peerDependencies": {
+		"viem": "2.x"
+	},
+	"repository": "https://github.com/snowball-tools/js-sdk",
+	"author": "Snowball Tools Inc.",
+	"license": "MIT",
+	"keywords": [
+		"passkeys"
+	]
+}
