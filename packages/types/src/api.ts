@@ -6,7 +6,7 @@ export type ApiRpcs = {
   pu_connectPasskey: (params: { challenge: string; attestation: { transports: ("AUTHENTICATOR_TRANSPORT_BLE" | "AUTHENTICATOR_TRANSPORT_INTERNAL" | "AUTHENTICATOR_TRANSPORT_NFC" | "AUTHENTICATOR_TRANSPORT_USB" | "AUTHENTICATOR_TRANSPORT_HYBRID")[]; credentialId: string; clientDataJson: string; attestationObject: string; }; }) => Promise<ErrResult<"unexpected"> | ErrResult<"user_not_found"> | ErrResult<"invalid_attestation"> | OkResult<{ user: Whoami; }>>
   loginPasskey: (params: { assertion: { credentialId: string; clientDataJson: string; signature: string; authenticatorData: string; }; }) => Promise<ErrResult<"unexpected"> | ErrResult<"user_not_found"> | ErrResult<"credential_not_found"> | ErrResult<"verify_failed", { message?: string | undefined; }> | OkResult<{ user: Whoami; newSession: { token: string; expiresAt: number; refreshToken: string; }; }>>
   pu_whoami: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<Whoami>>
-  getAuthConfig: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<{ turnkey: { rpId: string; orgId: string; rpName: string; apiBaseUrl: string; }; loginChallenge: string; }>>
+  getAuthConfig: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<{ turnkey: { rpId: string; orgId: string; rpName: string; apiBaseUrl: string; }; loginChallenge: string; iframeWalletUrl: string; }>>
   pu_getWalletConfig: (params: {}) => Promise<ErrResult<"unexpected"> | OkResult<{ organizationId: string; provider: { type: "key-a"; value: string; } | { type: "url"; value: string; }; }>>
 };
 export type ApiParams = {
@@ -72,3 +72,11 @@ export type Whoami = {
     credentialId: string
   }[]
 }
+
+export type IframeInput = { type: 'get-session' }
+
+export type IframeOutput =
+  | { type: 'toggle'; show: boolean }
+  | { type: 'no-session' }
+  | { type: 'auth'; user: Whoami }
+  | { type: 'confirm-tx'; tx: any }

@@ -1,12 +1,11 @@
 import { Address } from '@snowballtools/types'
 import { SnowballError } from '@snowballtools/types'
 import { ApiClient } from '@snowballtools/types'
-import { SnowballChain } from '@snowballtools/utils'
+import { SnowballChain, makePubSub } from '@snowballtools/utils'
 
 import { LocalStorage } from './LocalStorage'
 import { SnowballSmartWallet } from './SmartWallet'
 import { SnowballAuth } from './SnowballAuth'
-import { makePubSub } from './pubsub'
 import { makeRpcClient } from './rpc-client'
 
 type Ret<Fn extends (...args: any[]) => any> = Awaited<ReturnType<Fn>>
@@ -24,10 +23,7 @@ export type SnowballOptions<Auths extends AuthTypes, SmartWallet extends Snowbal
   storage?: LocalStorage
 }
 
-export type SnowballInitStatus =
-  | { name: 'loading' }
-  | { name: 'error'; error: Error }
-  | { name: 'ready' }
+export type SnowballInitStatus = { name: 'loading' } | { name: 'error'; error: Error } | { name: 'ready' }
 
 export type MakeAuthOptions = {
   rpc: ApiClient
@@ -86,10 +82,7 @@ export class Snowball<Auths extends AuthTypes, SmartWallet extends SnowballSmart
         })
       },
       withSmartWallet<SW extends SnowballSmartWallet>(
-        makeSmartWallet: (
-          chain: SnowballChain,
-          wallet: Ret<A[keyof A]['getWallet']>,
-        ) => Promise<SW> | SW,
+        makeSmartWallet: (chain: SnowballChain, wallet: Ret<A[keyof A]['getWallet']>) => Promise<SW> | SW,
       ) {
         return {
           create({ initialChain, ...opts }: CreateOpts) {

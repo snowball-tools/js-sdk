@@ -2,10 +2,13 @@
 	"name": "@snowballtools/auth-embedded",
 	"version": "0.6.0",
 	"description": "snowballtools auth-passkey",
-	"main": "./dist/index.js",
-	"module": "./dist/index.mjs",
-	"browser": {
-		"./dist/index.mjs": "./dist/index.browser.mjs"
+	"type": "module",
+	"exports": {
+		"node": {
+			"import": "./dist/index.js",
+			"default": "./dist/index.mjs"
+		},
+		"default": "./dist/index.browser.mjs"
 	},
 	"types": "./dist/index.d.ts",
 	"files": [

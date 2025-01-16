@@ -130,9 +130,7 @@ export abstract class EmbeddedAuthBase<Wallet> extends SnowballAuth<Wallet, Embe
 
   async verifyOtp(args: { code: string }) {
     if (this.state.name !== 'waiting-for-otp') {
-      return this.setErr(
-        err('invalid_state', 'e5725223', { meta: { expected_state: 'waiting-for-otp' } }),
-      )
+      return this.setErr(err('invalid_state', 'e5725223', { meta: { expected_state: 'waiting-for-otp' } }))
     }
     this.setLoading('emb:verifyOtp', 'Verifying OTP')
     const res = await this.rpc.verifyOtp({
@@ -183,9 +181,7 @@ export abstract class EmbeddedAuthBase<Wallet> extends SnowballAuth<Wallet, Embe
 
   async createPasskey({ name }: { name?: string }) {
     if (this.state.name !== 'authenticated-no-passkey') {
-      return this.setErr(
-        err('invalid_state', 'e6229558', { meta: { expected_state: 'authenticated' } }),
-      )
+      return this.setErr(err('invalid_state', 'e6229558', { meta: { expected_state: 'authenticated' } }))
     }
 
     const email = this.state.user.authMethods.find((m) => m.type === 'email')?.value
@@ -227,9 +223,7 @@ export abstract class EmbeddedAuthBase<Wallet> extends SnowballAuth<Wallet, Embe
       return this._wallet.client
     }
     if (!('user' in this.state) || !this.state.user) {
-      return this.setError(
-        new SnowballError('EmbeddedAuth.getWallet', `Invalid state: ${this.state.name}`),
-      )
+      return this.setError(new SnowballError('EmbeddedAuth.getWallet', `Invalid state: ${this.state.name}`))
     }
     const user = this.state.user
 
